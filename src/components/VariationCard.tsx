@@ -4,10 +4,11 @@ interface VariationCardProps {
   variation: PatternVariation;
   selected: boolean;
   onSelect(): void;
+  onPreview(): void;
   onUse(): void;
 }
 
-export function VariationCard({ variation, selected, onSelect, onUse }: VariationCardProps) {
+export function VariationCard({ variation, selected, onSelect, onPreview, onUse }: VariationCardProps) {
   const previewTracks = variation.pattern.tracks.slice(0, 4);
   const steps = Array.from({ length: Math.min(16, variation.pattern.length) }, (_, index) => index);
 
@@ -28,7 +29,7 @@ export function VariationCard({ variation, selected, onSelect, onUse }: Variatio
       </div>
       <p>{variation.description}</p>
       <div className="variation-actions">
-        <button onClick={(event) => { event.stopPropagation(); onSelect(); }}>Preview</button>
+        <button onClick={(event) => { event.stopPropagation(); onPreview(); }}>Preview</button>
         <button onClick={(event) => { event.stopPropagation(); onUse(); }}>Use</button>
       </div>
     </article>

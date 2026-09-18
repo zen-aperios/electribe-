@@ -5,10 +5,11 @@ interface VariationGridProps {
   variations: PatternVariation[];
   selectedVariationId: string | null;
   onSelect(id: string): void;
+  onPreview(id: string): void;
   onUse(): void;
 }
 
-export function VariationGrid({ variations, selectedVariationId, onSelect, onUse }: VariationGridProps) {
+export function VariationGrid({ variations, selectedVariationId, onSelect, onPreview, onUse }: VariationGridProps) {
   return (
     <section className="variation-grid" aria-label="Generated variations">
       {variations.length === 0 ? (
@@ -20,6 +21,7 @@ export function VariationGrid({ variations, selectedVariationId, onSelect, onUse
             variation={variation}
             selected={variation.id === selectedVariationId}
             onSelect={() => onSelect(variation.id)}
+            onPreview={() => onPreview(variation.id)}
             onUse={onUse}
           />
         ))

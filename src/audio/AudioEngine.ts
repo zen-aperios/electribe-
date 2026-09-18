@@ -5,6 +5,7 @@ import { midiToFrequency, playTone } from "./Synth";
 export class AudioEngine {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
+  private previewTimeouts: number[] = [];
 
   async ensureReady(): Promise<void> {
     if (!this.context) {
@@ -50,5 +51,30 @@ export class AudioEngine {
           }
         });
     });
+  }
+
+  previewPattern(
+    pattern: Pattern,
+    onStep?: (step: number) => void,
+    steps = Math.min(16, pattern.length),
+  ): void {
+    if (!this.context || !this.master) {
+      return;
+    }
+
+    this.stopPreview();
+    const stepDurationMs = (60_000 / pattern.bpm) / 4;
+    Array.from({ length: steps }, (_, index) => index).forEach((step) => {
+      const timeout = window.setTimeout(() => {
+        onStep?.(step);
+        this.playStep(pattern, step % pattern.length);
+      }, step * stepDurationMs);
+      this.previewTimeouts.push(timeout);
+    });
+  }
+
+  stopPreview(): void {
+    this.previewTimeouts.forEach((timeout) => window.clearTimeout(timeout));
+    this.previewTimeouts = [];
   }
 }

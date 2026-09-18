@@ -37,12 +37,25 @@ export function App() {
   const patternRef = useRef(activePattern);
   patternRef.current = activePattern;
 
+  const previewVariation = (id: string) => {
+    const variation = useGhostStore.getState().variations.find((candidate) => candidate.id === id);
+    if (!variation) {
+      return;
+    }
+
+    selectVariation(id);
+    void audio.ensureReady().then(() => {
+      audio.previewPattern(variation.pattern, setCurrentStep);
+    });
+  };
+
   useEffect(() => {
     if (!isPlaying) {
       sequencer.stop();
       return;
     }
 
+    audio.stopPreview();
     void audio.ensureReady().then(() => {
       sequencer.start(patternRef.current, setCurrentStep, (step) => audio.playStep(patternRef.current, step));
     });
@@ -143,6 +156,7 @@ export function App() {
         variations={variations}
         selectedVariationId={selectedVariationId}
         onSelect={selectVariation}
+        onPreview={previewVariation}
         onUse={acceptSelectedVariation}
       />
     </main>
