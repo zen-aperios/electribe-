@@ -18,6 +18,10 @@ import {
   useSelectedWorkflowVariation,
 } from "./ghostWorkflowActions";
 import {
+  setGenerationMutationStrength,
+  setGenerationPreservation,
+} from "./generationSettingsActions";
+import {
   createLibraryPattern,
   deleteLibraryPattern,
   duplicateLibraryPattern,
@@ -112,22 +116,16 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   setMutationStrength(mutationStrength) {
     set((state) => ({
-      generationSettings: {
-        ...state.generationSettings,
-        mutationStrength: clamp(mutationStrength, 0, 1.5),
-      },
+      generationSettings: setGenerationMutationStrength(
+        state.generationSettings,
+        mutationStrength,
+      ),
     }));
   },
 
   setPreservation(key, value) {
     set((state) => ({
-      generationSettings: {
-        ...state.generationSettings,
-        preservation: {
-          ...state.generationSettings.preservation,
-          [key]: clamp(Math.round(value), 0, 100),
-        },
-      },
+      generationSettings: setGenerationPreservation(state.generationSettings, key, value),
     }));
   },
 
@@ -352,8 +350,4 @@ function safeLoadLibrary(): PatternLibrary {
   }
 
   return loadLibrary();
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
