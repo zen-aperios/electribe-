@@ -3,6 +3,7 @@ import {
   clonePattern,
   createDefaultPattern,
   DEFAULT_PRESERVATION,
+  resizePatternLength,
   type GenerationParameters,
   type Note,
   type Pattern,
@@ -102,11 +103,15 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   updatePattern(update) {
     set((state) => ({
-      activePattern: {
-        ...state.activePattern,
-        ...update,
-        updatedAt: new Date().toISOString(),
-      },
+      activePattern:
+        update.length === undefined
+          ? {
+              ...state.activePattern,
+              ...update,
+              updatedAt: new Date().toISOString(),
+            }
+          : resizePatternLength({ ...state.activePattern, ...update }, update.length),
+      selectedNote: update.length === undefined ? state.selectedNote : null,
     }));
   },
 

@@ -1,4 +1,10 @@
-import type { Pattern, PreservationSettings, ScaleName } from "../engine/Pattern";
+import {
+  MAX_PATTERN_LENGTH,
+  MIN_PATTERN_LENGTH,
+  type Pattern,
+  type PreservationSettings,
+  type ScaleName,
+} from "../engine/Pattern";
 import { useGhostStore } from "../app/store";
 
 const SCALES: ScaleName[] = ["minor", "major", "dorian", "pentatonic"];
@@ -48,16 +54,13 @@ export function ParameterControls({ pattern }: ParameterControlsProps) {
       </label>
       <label>
         Length
-        <select
+        <input
+          type="number"
+          min={MIN_PATTERN_LENGTH}
+          max={MAX_PATTERN_LENGTH}
           value={pattern.length}
           onChange={(event) => updatePattern({ length: Number(event.target.value) })}
-        >
-          {[8, 16, 32, 64].map((length) => (
-            <option key={length} value={length}>
-              {length}
-            </option>
-          ))}
-        </select>
+        />
       </label>
       <label>
         Key

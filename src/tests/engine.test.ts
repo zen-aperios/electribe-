@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createDefaultPattern, createNote, notesEqual, validatePattern } from "../engine/Pattern";
+import {
+  createDefaultPattern,
+  createNote,
+  notesEqual,
+  resizePatternLength,
+  validatePattern,
+} from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import {
   mirrorPhrase,
@@ -89,6 +95,41 @@ describe("GHOST engine", () => {
 
     expect(variation.length).toBe(32);
     expect(variation.tracks.every((track) => track.notes.every((note) => note.step < 32))).toBe(true);
+  });
+
+  it("resizes patterns while removing out-of-range notes", () => {
+    const pattern = createDefaultPattern();
+    const resized = resizePatternLength(pattern, 8);
+
+    expect(resized.length).toBe(8);
+    expect(validatePattern(resized)).toBe(true);
+    expect(resized.tracks.every((track) => track.notes.every((note) => note.step < 8))).toBe(true);
+  });
+
+  it("clamps resized note durations to the pattern boundary", () => {
+    const pattern = createDefaultPattern();
+    const resized = resizePatternLength({
+      ...pattern,
+      tracks: pattern.tracks.map((track, index) =>
+        index === 0
+          ? {
+              ...track,
+              notes: [
+                createNote({
+                  step: 6,
+                  duration: 8,
+                  velocity: 1,
+                  probability: 1,
+                  pitch: 36,
+                }),
+              ],
+            }
+          : track,
+      ),
+    }, 8);
+
+    expect(resized.tracks[0].notes[0].duration).toBe(2);
+    expect(validatePattern(resized)).toBe(true);
   });
 
   it("preserves kick tracks when preservation is high", () => {

@@ -74,6 +74,9 @@ export const DEFAULT_PRESERVATION: PreservationSettings = {
   structure: 70,
 };
 
+export const MIN_PATTERN_LENGTH = 1;
+export const MAX_PATTERN_LENGTH = 64;
+
 const now = () => new Date().toISOString();
 
 export function createNote(note: Omit<Note, "id"> & { id?: string }): Note {
@@ -150,6 +153,24 @@ export function createPatternFromTracks(
   };
 }
 
+export function resizePatternLength(pattern: Pattern, length: number): Pattern {
+  const nextLength = Math.round(clamp(length, MIN_PATTERN_LENGTH, MAX_PATTERN_LENGTH));
+  return {
+    ...pattern,
+    length: nextLength,
+    tracks: pattern.tracks.map((track) => ({
+      ...track,
+      notes: track.notes
+        .filter((note) => note.step < nextLength)
+        .map((note) => ({
+          ...note,
+          duration: Math.min(note.duration, Math.max(1, nextLength - note.step)),
+        })),
+    })),
+    updatedAt: now(),
+  };
+}
+
 export function validatePattern(pattern: Pattern): boolean {
   return (
     pattern.length > 0 &&
@@ -217,4 +238,8 @@ export function cryptoId(prefix: string): string {
       ? crypto.randomUUID().slice(0, 8)
       : Math.random().toString(36).slice(2, 10);
   return `${prefix}-${random}`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
