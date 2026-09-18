@@ -1,4 +1,5 @@
 import { WebMidiService, type MidiService } from "./MidiService";
+import { TauriMidiService } from "./TauriMidiService";
 
 export type MidiRuntimeKind = "web" | "tauri";
 
@@ -12,6 +13,10 @@ export function detectMidiRuntime(scope: RuntimeScope = globalThis as RuntimeSco
   return scope.window?.__TAURI_INTERNALS__ ? "tauri" : "web";
 }
 
-export function createMidiService(): MidiService {
+export function createMidiService(scope: RuntimeScope = globalThis as RuntimeScope): MidiService {
+  if (detectMidiRuntime(scope) === "tauri") {
+    return new TauriMidiService();
+  }
+
   return new WebMidiService();
 }
