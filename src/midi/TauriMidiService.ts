@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import type { Pattern } from "../engine/Pattern";
 import type { MidiPortSummary, MidiService } from "./MidiService";
 
@@ -9,7 +10,7 @@ export class TauriMidiService implements MidiService {
   }
 
   async getOutputs(): Promise<MidiPortSummary[]> {
-    throw new Error(NOT_READY_MESSAGE);
+    return invoke<MidiPortSummary[]>("list_midi_outputs");
   }
 
   async connect(): Promise<void> {

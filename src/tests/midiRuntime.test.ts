@@ -1,7 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { detectMidiRuntime, createMidiService } from "../midi/MidiRuntime";
 import { TauriMidiService } from "../midi/TauriMidiService";
 import { WebMidiService } from "../midi/MidiService";
+
+const { invoke } = vi.hoisted(() => ({
+  invoke: vi.fn(),
+}));
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke,
+}));
+
+beforeEach(() => {
+  invoke.mockReset();
+});
 
 describe("MIDI runtime", () => {
   it("detects a web runtime by default", () => {
@@ -22,8 +34,17 @@ describe("MIDI runtime", () => {
     );
   });
 
-  it("fails loudly until native Tauri MIDI is wired", async () => {
-    await expect(new TauriMidiService().getOutputs()).rejects.toThrow(
+  it("lists MIDI outputs through the Tauri command bridge", async () => {
+    invoke.mockResolvedValue([{ id: "0", name: "Electribe 2" }]);
+
+    await expect(new TauriMidiService().getOutputs()).resolves.toEqual([
+      { id: "0", name: "Electribe 2" },
+    ]);
+    expect(invoke).toHaveBeenCalledWith("list_midi_outputs");
+  });
+
+  it("fails loudly for native MIDI sends until they are wired", () => {
+    expect(() => new TauriMidiService().sendClock()).toThrow(
       "Native Tauri MIDI is not wired yet.",
     );
   });

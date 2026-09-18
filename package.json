@@ -37,6 +37,7 @@
     "desktop:build": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
     "@vitejs/plugin-react": "^5.0.2",
     "lucide-react": "^0.544.0",
     "midi-file": "^1.2.4",
