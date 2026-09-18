@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import {
-  createDefaultPattern,
   DEFAULT_PRESERVATION,
   type GenerationParameters,
   type Note,
@@ -9,7 +8,7 @@ import {
   type PreservationSettings,
   type Track,
 } from "../engine/Pattern";
-import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
+import type { PatternLibrary } from "../storage/PatternStorage";
 import {
   generateGhostWorkflow,
   keepSourceWorkflowPattern,
@@ -40,6 +39,7 @@ import {
   updateTrackPerformance as updatePatternTrackPerformance,
   type SelectedNoteRef,
 } from "./patternActions";
+import { loadLibraryState, persistLibrary } from "./storePersistence";
 
 interface GhostState {
   library: PatternLibrary;
@@ -80,15 +80,12 @@ interface GhostState {
   importPattern(pattern: Pattern): void;
 }
 
-const initialLibrary = safeLoadLibrary();
-const initialPattern = initialLibrary.patterns.find(
-  (pattern) => pattern.id === initialLibrary.activePatternId,
-) ?? initialLibrary.patterns[0] ?? createDefaultPattern();
+const initialLibraryState = loadLibraryState();
 
 export const useGhostStore = create<GhostState>((set, get) => ({
-  library: initialLibrary,
-  activePattern: initialPattern,
-  sourcePattern: initialPattern,
+  library: initialLibraryState.library,
+  activePattern: initialLibraryState.activePattern,
+  sourcePattern: initialLibraryState.sourcePattern,
   variations: [],
   selectedVariationId: null,
   isPlaying: false,
@@ -243,14 +240,12 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   saveActivePattern() {
     const state = get();
     const library = savePatternToLibrary(state.library, state.activePattern);
-    saveLibrary(library);
+    persistLibrary(library);
     set({ library });
   },
 
   loadFromStorage() {
-    const library = safeLoadLibrary();
-    const activePattern = library.patterns.find((pattern) => pattern.id === library.activePatternId) ?? library.patterns[0];
-    set({ library, activePattern, sourcePattern: activePattern, selectedNote: null });
+    set({ ...loadLibraryState(), selectedNote: null });
   },
 
   setActivePattern(id) {
@@ -259,7 +254,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       return;
     }
 
-    saveLibrary(result.library);
+    persistLibrary(result.library);
     set({
       library: result.library,
       activePattern: result.activePattern,
@@ -273,7 +268,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   createPattern() {
     const result = createLibraryPattern(get().library);
-    saveLibrary(result.library);
+    persistLibrary(result.library);
     set({
       library: result.library,
       activePattern: result.activePattern,
@@ -287,7 +282,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   duplicateActivePattern() {
     const result = duplicateLibraryPattern(get().library, get().activePattern);
-    saveLibrary(result.library);
+    persistLibrary(result.library);
     set({
       library: result.library,
       activePattern: result.activePattern,
@@ -305,7 +300,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       return;
     }
 
-    saveLibrary(result.library);
+    persistLibrary(result.library);
     set({
       library: result.library,
       activePattern: result.activePattern,
@@ -316,7 +311,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   deleteActivePattern() {
     const result = deleteLibraryPattern(get().library, get().activePattern);
-    saveLibrary(result.library);
+    persistLibrary(result.library);
     set({
       library: result.library,
       activePattern: result.activePattern,
@@ -330,7 +325,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   importPattern(pattern) {
     const result = importPatternToLibrary(get().library, pattern);
-    saveLibrary(result.library);
+    persistLibrary(result.library);
     set({
       library: result.library,
       activePattern: result.activePattern,
@@ -342,12 +337,3 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     });
   },
 }));
-
-function safeLoadLibrary(): PatternLibrary {
-  if (typeof localStorage === "undefined") {
-    const activePattern = createDefaultPattern();
-    return { activePatternId: activePattern.id, patterns: [activePattern] };
-  }
-
-  return loadLibrary();
-}
