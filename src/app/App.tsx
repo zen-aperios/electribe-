@@ -3,6 +3,7 @@ import { AudioEngine } from "../audio/AudioEngine";
 import { Sequencer } from "../audio/Sequencer";
 import { GhostButton } from "../components/GhostButton";
 import { MidiPanel } from "../components/MidiPanel";
+import { NoteEditorPanel } from "../components/NoteEditorPanel";
 import { ParameterControls } from "../components/ParameterControls";
 import { PatternLibraryPanel } from "../components/PatternLibraryPanel";
 import { PatternGrid } from "../components/PatternGrid";
@@ -132,6 +133,7 @@ export function App() {
         <PatternGrid pattern={activePattern} currentStep={currentStep} />
         <aside className="right-rail">
           <PatternLibraryPanel />
+          <NoteEditorPanel />
           <div className="ab-panel">
             <div className="segmented">
               <button className={compareMode === "A" ? "active" : ""} onClick={() => setCompareMode("A")}>

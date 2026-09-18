@@ -10,6 +10,7 @@ interface TrackRowProps {
 
 export function TrackRow({ track, length, currentStep }: TrackRowProps) {
   const toggleNote = useGhostStore((state) => state.toggleNote);
+  const selectedNote = useGhostStore((state) => state.selectedNote);
   const steps = Array.from({ length }, (_, index) => index);
   const notesByStep = new Map(track.notes.map((note) => [note.step, note]));
 
@@ -21,10 +22,14 @@ export function TrackRow({ track, length, currentStep }: TrackRowProps) {
       </div>
       {steps.map((step) => {
         const note = notesByStep.get(step);
+        const selected =
+          Boolean(note && selectedNote) &&
+          note?.id === selectedNote?.noteId &&
+          track.id === selectedNote?.trackId;
         return (
           <button
             key={step}
-            className={`step ${note ? "on" : ""} ${step === currentStep ? "playing" : ""}`}
+            className={`step ${note ? "on" : ""} ${selected ? "selected" : ""} ${step === currentStep ? "playing" : ""}`}
             onClick={() => toggleNote(track.id, step)}
             title={`${track.name} step ${step + 1}`}
             style={note ? ({ "--velocity": note.velocity } as CSSProperties) : undefined}

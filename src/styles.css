@@ -232,6 +232,10 @@ h1 {
   background: #08090a;
 }
 
+.step.selected {
+  box-shadow: inset 0 0 0 2px #f1f4ed;
+}
+
 .step.playing {
   outline: 2px solid #ff6b35;
   outline-offset: -2px;
@@ -245,6 +249,7 @@ h1 {
 
 .ab-panel,
 .library-panel,
+.note-panel,
 .midi-panel {
   border: 1px solid #252d29;
   border-radius: 8px;
@@ -284,6 +289,67 @@ h1 {
   min-height: 32px;
   padding: 0 6px;
   font-size: 0.74rem;
+}
+
+.note-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.note-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.note-panel p {
+  color: #9aa69d;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.note-target {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #d7ff4f;
+  font-size: 0.82rem;
+}
+
+.note-panel label {
+  display: grid;
+  gap: 5px;
+  color: #9aa69d;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.note-panel input {
+  min-height: 32px;
+  border: 1px solid #313936;
+  border-radius: 6px;
+  background: #0e1210;
+  color: #f1f4ed;
+  padding: 0 8px;
+}
+
+.note-number-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.delete-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border-color: #59342c;
+  color: #ffb29d;
 }
 
 .segmented {

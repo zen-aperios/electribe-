@@ -4,6 +4,7 @@ import {
   createDefaultPattern,
   DEFAULT_PRESERVATION,
   type GenerationParameters,
+  type Note,
   type Pattern,
   type PatternVariation,
   type PreservationSettings,
@@ -21,12 +22,16 @@ interface GhostState {
   currentStep: number;
   compareMode: "A" | "B";
   generationSettings: GenerationParameters;
+  selectedNote: { trackId: string; noteId: string } | null;
   setPlaying(isPlaying: boolean): void;
   setCurrentStep(step: number): void;
   setMutationStrength(mutationStrength: number): void;
   setPreservation(key: keyof PreservationSettings, value: number): void;
   updatePattern(update: Partial<Pattern>): void;
   toggleNote(trackId: string, step: number): void;
+  selectNote(trackId: string, noteId: string): void;
+  updateSelectedNote(update: Partial<Note>): void;
+  deleteSelectedNote(): void;
   generate(seed?: string): void;
   selectVariation(id: string): void;
   useSelectedVariation(): void;
@@ -57,6 +62,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   isPlaying: false,
   currentStep: 0,
   compareMode: "A",
+  selectedNote: null,
   generationSettings: {
     variationCount: 6,
     mutationStrength: 1,
@@ -104,6 +110,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   toggleNote(trackId, step) {
     set((state) => {
+      let selectedNote = state.selectedNote;
       const activePattern = {
         ...state.activePattern,
         tracks: state.activePattern.tracks.map((track) => {
@@ -113,34 +120,88 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
           const existing = track.notes.find((note) => note.step === step);
           if (existing) {
-            return {
-              ...track,
-              notes: track.notes.filter((note) => note.id !== existing.id),
-            };
+            selectedNote = { trackId, noteId: existing.id };
+            return track;
           }
 
           const pitch = track.notes[0]?.pitch ?? 60;
+          const note = {
+            id: `note-${track.id}-${step}-${Date.now()}`,
+            step,
+            duration: track.instrumentType === "chord" ? 4 : 1,
+            velocity: step % 4 === 0 ? 0.9 : 0.7,
+            probability: 1,
+            pitch,
+            microTiming: 0,
+          };
+          selectedNote = { trackId, noteId: note.id };
           return {
             ...track,
-            notes: [
-              ...track.notes,
-              {
-                id: `note-${track.id}-${step}-${Date.now()}`,
-                step,
-                duration: track.instrumentType === "chord" ? 4 : 1,
-                velocity: step % 4 === 0 ? 0.9 : 0.7,
-                probability: 1,
-                pitch,
-                microTiming: 0,
-              },
-            ].sort((left, right) => left.step - right.step),
+            notes: [...track.notes, note].sort((left, right) => left.step - right.step),
           };
         }),
         updatedAt: new Date().toISOString(),
       };
 
-      return { activePattern };
+      return { activePattern, selectedNote };
     });
+  },
+
+  selectNote(trackId, noteId) {
+    set({ selectedNote: { trackId, noteId } });
+  },
+
+  updateSelectedNote(update) {
+    const selectedNote = get().selectedNote;
+    if (!selectedNote) {
+      return;
+    }
+
+    set((state) => ({
+      activePattern: {
+        ...state.activePattern,
+        tracks: state.activePattern.tracks.map((track) => {
+          if (track.id !== selectedNote.trackId) {
+            return track;
+          }
+
+          return {
+            ...track,
+            notes: track.notes
+              .map((note) =>
+                note.id === selectedNote.noteId
+                  ? sanitizeNote({ ...note, ...update }, state.activePattern.length)
+                  : note,
+              )
+              .sort((left, right) => left.step - right.step),
+          };
+        }),
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  },
+
+  deleteSelectedNote() {
+    const selectedNote = get().selectedNote;
+    if (!selectedNote) {
+      return;
+    }
+
+    set((state) => ({
+      selectedNote: null,
+      activePattern: {
+        ...state.activePattern,
+        tracks: state.activePattern.tracks.map((track) =>
+          track.id === selectedNote.trackId
+            ? {
+                ...track,
+                notes: track.notes.filter((note) => note.id !== selectedNote.noteId),
+              }
+            : track,
+        ),
+        updatedAt: new Date().toISOString(),
+      },
+    }));
   },
 
   generate(seed = Date.now().toString(36)) {
@@ -151,6 +212,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       variations,
       selectedVariationId: variations[0]?.id ?? null,
       activePattern: variations[0]?.pattern ?? sourcePattern,
+      selectedNote: null,
       compareMode: "B",
     });
   },
@@ -160,7 +222,12 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     if (!variation) {
       return;
     }
-    set({ selectedVariationId: id, activePattern: variation.pattern, compareMode: "B" });
+    set({
+      selectedVariationId: id,
+      activePattern: variation.pattern,
+      selectedNote: null,
+      compareMode: "B",
+    });
   },
 
   useSelectedVariation() {
@@ -179,6 +246,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       sourcePattern: activePattern,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     });
   },
@@ -188,6 +256,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       activePattern: state.sourcePattern,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     }));
   },
@@ -201,6 +270,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     set((state) => ({
       compareMode: mode,
       activePattern: mode === "A" ? state.sourcePattern : selected?.pattern ?? state.activePattern,
+      selectedNote: null,
     }));
   },
 
@@ -218,7 +288,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   loadFromStorage() {
     const library = safeLoadLibrary();
     const activePattern = library.patterns.find((pattern) => pattern.id === library.activePatternId) ?? library.patterns[0];
-    set({ library, activePattern, sourcePattern: activePattern });
+    set({ library, activePattern, sourcePattern: activePattern, selectedNote: null });
   },
 
   setActivePattern(id) {
@@ -235,6 +305,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       sourcePattern: pattern,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     });
   },
@@ -253,6 +324,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       sourcePattern: activePattern,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     });
   },
@@ -270,6 +342,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       sourcePattern: duplicate,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     });
   },
@@ -287,7 +360,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     };
     const library = upsertPattern(get().library, activePattern);
     saveLibrary(library);
-    set({ library, activePattern, sourcePattern: activePattern });
+    set({ library, activePattern, sourcePattern: activePattern, selectedNote: null });
   },
 
   deleteActivePattern() {
@@ -307,6 +380,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       sourcePattern: activePattern,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     });
   },
@@ -323,6 +397,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       sourcePattern: pattern,
       variations: [],
       selectedVariationId: null,
+      selectedNote: null,
       compareMode: "A",
     });
   },
@@ -349,4 +424,16 @@ function upsertPattern(library: PatternLibrary, pattern: Pattern): PatternLibrar
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function sanitizeNote(note: Note, patternLength: number): Note {
+  return {
+    ...note,
+    step: Math.round(clamp(note.step, 0, patternLength - 1)),
+    duration: Math.round(clamp(note.duration, 1, patternLength)),
+    velocity: clamp(note.velocity, 0.01, 1),
+    probability: clamp(note.probability, 0, 1),
+    pitch: Math.round(clamp(note.pitch, 0, 127)),
+    microTiming: clamp(note.microTiming ?? 0, -0.45, 0.45),
+  };
 }
