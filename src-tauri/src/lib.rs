@@ -1,16 +1,45 @@
-use midir::{MidiOutput, MidiOutputConnection};
+use midir::{Ignore, MidiInput, MidiInputConnection, MidiOutput, MidiOutputConnection};
 use serde::Serialize;
 use std::sync::Mutex;
+use tauri::{AppHandle, Emitter};
 
 #[derive(Default)]
 struct MidiState {
     output: Mutex<Option<MidiOutputConnection>>,
+    input: Mutex<Option<MidiInputConnection<()>>>,
 }
 
 #[derive(Serialize)]
 struct MidiPortSummary {
     id: String,
     name: String,
+}
+
+#[derive(Clone, Serialize)]
+struct MidiInputMessage {
+    timestamp: u64,
+    data: Vec<u8>,
+}
+
+#[tauri::command]
+fn list_midi_inputs() -> Result<Vec<MidiPortSummary>, String> {
+    let midi_input = MidiInput::new("GHOST MIDI Input").map_err(|error| error.to_string())?;
+
+    midi_input
+        .ports()
+        .iter()
+        .enumerate()
+        .map(|(index, port)| {
+            let name = midi_input
+                .port_name(port)
+                .unwrap_or_else(|_| "MIDI Input".to_string());
+
+            Ok(MidiPortSummary {
+                id: index.to_string(),
+                name,
+            })
+        })
+        .collect()
 }
 
 #[tauri::command]
@@ -32,6 +61,56 @@ fn list_midi_outputs() -> Result<Vec<MidiPortSummary>, String> {
             })
         })
         .collect()
+}
+
+#[tauri::command]
+fn connect_midi_input(
+    input_id: String,
+    app: AppHandle,
+    state: tauri::State<MidiState>,
+) -> Result<(), String> {
+    let input_index = input_id
+        .parse::<usize>()
+        .map_err(|_| "Invalid MIDI input id.".to_string())?;
+    let mut midi_input = MidiInput::new("GHOST MIDI Input").map_err(|error| error.to_string())?;
+    midi_input.ignore(Ignore::None);
+    let ports = midi_input.ports();
+    let port = ports
+        .get(input_index)
+        .ok_or_else(|| "MIDI input was not found.".to_string())?;
+    let connection = midi_input
+        .connect(
+            port,
+            "GHOST MIDI Input Connection",
+            move |timestamp, message, _| {
+                let _ = app.emit(
+                    "midi-input-message",
+                    MidiInputMessage {
+                        timestamp,
+                        data: message.to_vec(),
+                    },
+                );
+            },
+            (),
+        )
+        .map_err(|error| error.to_string())?;
+
+    *state
+        .input
+        .lock()
+        .map_err(|_| "MIDI input connection is unavailable.".to_string())? = Some(connection);
+
+    Ok(())
+}
+
+#[tauri::command]
+fn disconnect_midi_input(state: tauri::State<MidiState>) -> Result<(), String> {
+    *state
+        .input
+        .lock()
+        .map_err(|_| "MIDI input connection is unavailable.".to_string())? = None;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -137,7 +216,10 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            list_midi_inputs,
             list_midi_outputs,
+            connect_midi_input,
+            disconnect_midi_input,
             connect_midi_output,
             disconnect_midi_output,
             send_midi_note,

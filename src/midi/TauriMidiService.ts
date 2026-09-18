@@ -1,13 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { Pattern } from "../engine/Pattern";
 import { patternToAudibleMidiEvents, patternToMidiControlEvents } from "./MidiMapper";
-import type { MidiPortSummary, MidiService } from "./MidiService";
-
-const NOT_READY_MESSAGE = "Native Tauri MIDI is not wired yet.";
+import type { MidiInputMessage, MidiPortSummary, MidiService } from "./MidiService";
 
 export class TauriMidiService implements MidiService {
+  private unlistenInput: UnlistenFn | null = null;
+
   async getInputs(): Promise<MidiPortSummary[]> {
-    throw new Error(NOT_READY_MESSAGE);
+    return invoke<MidiPortSummary[]>("list_midi_inputs");
   }
 
   async getOutputs(): Promise<MidiPortSummary[]> {
@@ -16,6 +17,24 @@ export class TauriMidiService implements MidiService {
 
   async connect(outputId: string): Promise<void> {
     await invoke("connect_midi_output", { outputId });
+  }
+
+  async connectInput(
+    inputId: string,
+    onMessage: (message: MidiInputMessage) => void,
+  ): Promise<void> {
+    this.disconnectInput();
+    this.unlistenInput = await listen<MidiInputMessage>(
+      "midi-input-message",
+      (event) => onMessage(event.payload),
+    );
+    await invoke("connect_midi_input", { inputId });
+  }
+
+  disconnectInput(): void {
+    this.unlistenInput?.();
+    this.unlistenInput = null;
+    void invoke("disconnect_midi_input");
   }
 
   disconnect(): void {

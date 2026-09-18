@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useGhostStore } from "../app/store";
 import type { Pattern } from "../engine/Pattern";
+import { electribeParameterIdForCc } from "../midi/ElectribeParameters";
 import { createMidiService } from "../midi/MidiRuntime";
-import type { MidiPortSummary } from "../midi/MidiService";
+import type { MidiInputMessage, MidiPortSummary } from "../midi/MidiService";
 
 interface MidiDevicePanelProps {
   pattern: Pattern;
@@ -10,8 +12,19 @@ interface MidiDevicePanelProps {
 
 export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
   const midiService = useMemo(() => createMidiService(), []);
+  const updateTrackElectribeParameter = useGhostStore(
+    (state) => state.updateTrackElectribeParameter,
+  );
+  const [inputs, setInputs] = useState<MidiPortSummary[]>([]);
   const [outputs, setOutputs] = useState<MidiPortSummary[]>([]);
+  const [selectedInputId, setSelectedInputId] = useState("");
   const [selectedOutputId, setSelectedOutputId] = useState("");
+
+  useEffect(() => {
+    return () => {
+      midiService.disconnectInput();
+    };
+  }, [midiService]);
 
   const refreshOutputs = async () => {
     try {
@@ -21,6 +34,17 @@ export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
       onStatus(nextOutputs.length ? "MIDI outputs found" : "No MIDI outputs found");
     } catch (error) {
       onStatus(error instanceof Error ? error.message : "MIDI access failed");
+    }
+  };
+
+  const refreshInputs = async () => {
+    try {
+      const nextInputs = await midiService.getInputs();
+      setInputs(nextInputs);
+      setSelectedInputId((current) => current || nextInputs[0]?.id || "");
+      onStatus(nextInputs.length ? "MIDI inputs found" : "No MIDI inputs found");
+    } catch (error) {
+      onStatus(error instanceof Error ? error.message : "MIDI input access failed");
     }
   };
 
@@ -38,6 +62,41 @@ export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
     }
   };
 
+  const connectInput = async () => {
+    if (!selectedInputId) {
+      onStatus("Choose a MIDI input");
+      return;
+    }
+
+    try {
+      await midiService.connectInput(selectedInputId, mirrorIncomingMidiMessage);
+      onStatus("MIDI input connected for mirror");
+    } catch (error) {
+      onStatus(error instanceof Error ? error.message : "MIDI input connect failed");
+    }
+  };
+
+  const mirrorIncomingMidiMessage = (message: MidiInputMessage) => {
+    const [status, controller, value] = message.data;
+    if ((status & 0xf0) !== 0xb0 || controller === undefined || value === undefined) {
+      return;
+    }
+
+    const parameterId = electribeParameterIdForCc(controller);
+    if (!parameterId) {
+      return;
+    }
+
+    const channel = (status & 0x0f) + 1;
+    const track = pattern.tracks.find((candidate) => candidate.midiChannel === channel);
+    if (!track) {
+      return;
+    }
+
+    updateTrackElectribeParameter(track.id, parameterId, value);
+    onStatus(`${track.name} ${parameterId} mirrored from MIDI`);
+  };
+
   const sendPattern = () => {
     try {
       midiService.sendPattern(pattern);
@@ -51,6 +110,29 @@ export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
     <>
       <div className="midi-output-row">
         <select
+          value={selectedInputId}
+          onChange={(event) => setSelectedInputId(event.target.value)}
+          title="MIDI input"
+        >
+          <option value="">No input</option>
+          {inputs.map((input) => (
+            <option key={input.id} value={input.id}>
+              {input.name}
+            </option>
+          ))}
+        </select>
+        <button onClick={() => void refreshInputs()}>Scan In</button>
+      </div>
+      <div className="midi-actions">
+        <button onClick={() => void connectInput()} disabled={!selectedInputId}>
+          Mirror In
+        </button>
+        <button onClick={() => midiService.disconnectInput()} disabled={!selectedInputId}>
+          Stop In
+        </button>
+      </div>
+      <div className="midi-output-row">
+        <select
           value={selectedOutputId}
           onChange={(event) => setSelectedOutputId(event.target.value)}
           title="MIDI output"
@@ -62,7 +144,7 @@ export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
             </option>
           ))}
         </select>
-        <button onClick={() => void refreshOutputs()}>Scan</button>
+        <button onClick={() => void refreshOutputs()}>Scan Out</button>
       </div>
       <div className="midi-actions">
         <button onClick={() => void connectOutput()} disabled={!selectedOutputId}>

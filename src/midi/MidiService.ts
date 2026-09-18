@@ -6,9 +6,16 @@ export interface MidiPortSummary {
   name: string;
 }
 
+export interface MidiInputMessage {
+  timestamp: number;
+  data: number[];
+}
+
 export interface MidiService {
   getInputs(): Promise<MidiPortSummary[]>;
   getOutputs(): Promise<MidiPortSummary[]>;
+  connectInput(inputId: string, onMessage: (message: MidiInputMessage) => void): Promise<void>;
+  disconnectInput(): void;
   connect(outputId: string): Promise<void>;
   disconnect(): void;
   sendNote(channel: number, pitch: number, velocity: number, durationMs: number): void;
@@ -24,6 +31,7 @@ type WebMidiAccess = MIDIAccess & {
 
 export class WebMidiService implements MidiService {
   private access: WebMidiAccess | null = null;
+  private input: MIDIInput | null = null;
   private output: MIDIOutput | null = null;
 
   async getInputs(): Promise<MidiPortSummary[]> {
@@ -39,6 +47,33 @@ export class WebMidiService implements MidiService {
   async connect(outputId: string): Promise<void> {
     const access = await this.getAccess();
     this.output = access.outputs.get(outputId) ?? null;
+  }
+
+  async connectInput(
+    inputId: string,
+    onMessage: (message: MidiInputMessage) => void,
+  ): Promise<void> {
+    const access = await this.getAccess();
+    this.input = access.inputs.get(inputId) ?? null;
+    if (this.input) {
+      this.input.onmidimessage = (event) => {
+        if (!event.data) {
+          return;
+        }
+
+        onMessage({
+          timestamp: event.timeStamp,
+          data: Array.from(event.data),
+        });
+      };
+    }
+  }
+
+  disconnectInput(): void {
+    if (this.input) {
+      this.input.onmidimessage = null;
+    }
+    this.input = null;
   }
 
   disconnect(): void {

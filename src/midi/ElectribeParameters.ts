@@ -62,6 +62,14 @@ export function electribeParametersToMidiControlEvents(
   }));
 }
 
+export function electribeParameterIdForCc(
+  controller: number,
+): ElectribeParameterId | null {
+  return (
+    ELECTRIBE_PARAMETERS.find((parameter) => parameter.cc === controller)?.id ?? null
+  );
+}
+
 function clampMidiValue(value: number): number {
   return Math.round(clamp(value, 0, 127));
 }

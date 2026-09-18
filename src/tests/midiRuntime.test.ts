@@ -4,16 +4,25 @@ import { TauriMidiService } from "../midi/TauriMidiService";
 import { WebMidiService } from "../midi/MidiService";
 import { createDefaultPattern } from "../engine/Pattern";
 
-const { invoke } = vi.hoisted(() => ({
+const { invoke, listen, unlisten } = vi.hoisted(() => ({
   invoke: vi.fn(),
+  listen: vi.fn(),
+  unlisten: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke,
 }));
 
+vi.mock("@tauri-apps/api/event", () => ({
+  listen,
+}));
+
 beforeEach(() => {
   invoke.mockReset();
+  listen.mockReset();
+  unlisten.mockReset();
+  listen.mockResolvedValue(unlisten);
   vi.useRealTimers();
 });
 
@@ -43,6 +52,28 @@ describe("MIDI runtime", () => {
       { id: "0", name: "Electribe 2" },
     ]);
     expect(invoke).toHaveBeenCalledWith("list_midi_outputs");
+  });
+
+  it("lists MIDI inputs through the Tauri command bridge", async () => {
+    invoke.mockResolvedValue([{ id: "1", name: "Electribe In" }]);
+
+    await expect(new TauriMidiService().getInputs()).resolves.toEqual([
+      { id: "1", name: "Electribe In" },
+    ]);
+    expect(invoke).toHaveBeenCalledWith("list_midi_inputs");
+  });
+
+  it("connects and disconnects MIDI input mirror events", async () => {
+    const onMessage = vi.fn();
+    const service = new TauriMidiService();
+
+    await service.connectInput("3", onMessage);
+    service.disconnectInput();
+
+    expect(listen).toHaveBeenCalledWith("midi-input-message", expect.any(Function));
+    expect(invoke).toHaveBeenCalledWith("connect_midi_input", { inputId: "3" });
+    expect(unlisten).toHaveBeenCalled();
+    expect(invoke).toHaveBeenCalledWith("disconnect_midi_input");
   });
 
   it("connects and disconnects through the Tauri command bridge", async () => {
