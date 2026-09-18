@@ -301,9 +301,26 @@ h1 {
   gap: 10px;
 }
 
+.library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .library-panel h2 {
   margin: 0;
   font-size: 0.95rem;
+}
+
+.library-heading span {
+  color: #7f8c83;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.library-heading span.dirty {
+  color: #d7ff4f;
 }
 
 .library-panel select {
@@ -328,6 +345,11 @@ h1 {
   min-height: 32px;
   padding: 0 6px;
   font-size: 0.74rem;
+}
+
+.library-actions button.save-dirty {
+  border-color: #d7ff4f;
+  color: #d7ff4f;
 }
 
 .note-panel {

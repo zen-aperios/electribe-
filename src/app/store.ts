@@ -25,6 +25,7 @@ interface GhostState {
   compareMode: "A" | "B";
   generationSettings: GenerationParameters;
   selectedNote: { trackId: string; noteId: string } | null;
+  isDirty(): boolean;
   setPlaying(isPlaying: boolean): void;
   setCurrentStep(step: number): void;
   setMutationStrength(mutationStrength: number): void;
@@ -71,6 +72,14 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     variationCount: 6,
     mutationStrength: 1,
     preservation: DEFAULT_PRESERVATION,
+  },
+
+  isDirty() {
+    const state = get();
+    const saved = state.library.patterns.find(
+      (pattern) => pattern.id === state.activePattern.id,
+    );
+    return !saved || stablePatternString(saved) !== stablePatternString(state.activePattern);
   },
 
   setPlaying(isPlaying) {
@@ -489,4 +498,12 @@ function sanitizeNote(note: Note, patternLength: number): Note {
     pitch: Math.round(clamp(note.pitch, 0, 127)),
     microTiming: clamp(note.microTiming ?? 0, -0.45, 0.45),
   };
+}
+
+function stablePatternString(pattern: Pattern): string {
+  return JSON.stringify({
+    ...pattern,
+    updatedAt: undefined,
+    createdAt: undefined,
+  });
 }
