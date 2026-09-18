@@ -69,8 +69,18 @@ export class WebMidiService implements MidiService {
   }
 
   sendPattern(pattern: Pattern): void {
+    if (!this.output) {
+      return;
+    }
+
+    const stepDurationMs = (60_000 / pattern.bpm) / 4;
+    const now = window.performance.now();
     patternToMidiEvents(pattern).forEach((event) => {
-      this.sendNote(event.channel, event.pitch, event.velocity, event.durationSteps * 125);
+      const midiChannel = Math.max(0, Math.min(15, event.channel - 1));
+      const startTime = now + event.startStep * stepDurationMs;
+      const endTime = startTime + event.durationSteps * stepDurationMs;
+      this.output?.send([0x90 + midiChannel, event.pitch, event.velocity], startTime);
+      this.output?.send([0x80 + midiChannel, event.pitch, 0], endTime);
     });
   }
 

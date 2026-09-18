@@ -1,10 +1,11 @@
 import { Cable, FileDown, FileUp } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useGhostStore } from "../app/store";
 import {
   exportPatternToMidiBytes,
   importPatternFromMidiBytes,
 } from "../midi/MidiFile";
+import { WebMidiService, type MidiPortSummary } from "../midi/MidiService";
 import { exportPatternJson, importPatternJson } from "../storage/PatternStorage";
 
 export function MidiPanel() {
@@ -12,6 +13,9 @@ export function MidiPanel() {
   const importPattern = useGhostStore((state) => state.importPattern);
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const midiInputRef = useRef<HTMLInputElement>(null);
+  const midiService = useMemo(() => new WebMidiService(), []);
+  const [outputs, setOutputs] = useState<MidiPortSummary[]>([]);
+  const [selectedOutputId, setSelectedOutputId] = useState("");
   const [status, setStatus] = useState("Ready");
 
   const exportJson = () => {
@@ -61,12 +65,69 @@ export function MidiPanel() {
     }
   };
 
+  const refreshOutputs = async () => {
+    try {
+      const nextOutputs = await midiService.getOutputs();
+      setOutputs(nextOutputs);
+      setSelectedOutputId((current) => current || nextOutputs[0]?.id || "");
+      setStatus(nextOutputs.length ? "MIDI outputs found" : "No MIDI outputs found");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "MIDI access failed");
+    }
+  };
+
+  const connectOutput = async () => {
+    if (!selectedOutputId) {
+      setStatus("Choose a MIDI output");
+      return;
+    }
+
+    try {
+      await midiService.connect(selectedOutputId);
+      setStatus("MIDI output connected");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "MIDI connect failed");
+    }
+  };
+
+  const sendPattern = () => {
+    try {
+      midiService.sendPattern(activePattern);
+      setStatus("Pattern sent to MIDI output");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "MIDI send failed");
+    }
+  };
+
   return (
     <section className="midi-panel">
       <h2>
         <Cable size={16} />
-        Files
+        MIDI
       </h2>
+      <div className="midi-output-row">
+        <select
+          value={selectedOutputId}
+          onChange={(event) => setSelectedOutputId(event.target.value)}
+          title="MIDI output"
+        >
+          <option value="">No output</option>
+          {outputs.map((output) => (
+            <option key={output.id} value={output.id}>
+              {output.name}
+            </option>
+          ))}
+        </select>
+        <button onClick={() => void refreshOutputs()}>Scan</button>
+      </div>
+      <div className="midi-actions">
+        <button onClick={() => void connectOutput()} disabled={!selectedOutputId}>
+          Connect
+        </button>
+        <button onClick={sendPattern} disabled={!selectedOutputId}>
+          Send
+        </button>
+      </div>
       <div className="file-actions">
         <button onClick={exportJson} title="Export JSON">
           <FileDown size={15} />

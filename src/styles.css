@@ -313,6 +313,28 @@ h1 {
   margin-top: 10px;
 }
 
+.midi-output-row,
+.midi-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.midi-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.midi-output-row select {
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid #313936;
+  border-radius: 6px;
+  background: #0e1210;
+  color: #f1f4ed;
+  padding: 0 8px;
+}
+
 .file-actions button {
   display: inline-flex;
   align-items: center;
