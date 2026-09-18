@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Pattern } from "../engine/Pattern";
-import { WebMidiService, type MidiPortSummary } from "../midi/MidiService";
+import { createMidiService } from "../midi/MidiRuntime";
+import type { MidiPortSummary } from "../midi/MidiService";
 
 interface MidiDevicePanelProps {
   pattern: Pattern;
@@ -8,7 +9,7 @@ interface MidiDevicePanelProps {
 }
 
 export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
-  const midiService = useMemo(() => new WebMidiService(), []);
+  const midiService = useMemo(() => createMidiService(), []);
   const [outputs, setOutputs] = useState<MidiPortSummary[]>([]);
   const [selectedOutputId, setSelectedOutputId] = useState("");
 
