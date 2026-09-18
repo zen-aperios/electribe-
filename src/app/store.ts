@@ -3,7 +3,6 @@ import {
   clonePattern,
   createDefaultPattern,
   DEFAULT_PRESERVATION,
-  resizePatternLength,
   type GenerationParameters,
   type Note,
   type Pattern,
@@ -13,6 +12,15 @@ import {
 } from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
+import {
+  deletePatternNote,
+  togglePatternNote,
+  updatePatternMetadata,
+  updatePatternNote,
+  updateTrackMapping as updatePatternTrackMapping,
+  updateTrackPerformance as updatePatternTrackPerformance,
+  type SelectedNoteRef,
+} from "./patternActions";
 
 interface GhostState {
   library: PatternLibrary;
@@ -24,7 +32,7 @@ interface GhostState {
   currentStep: number;
   compareMode: "A" | "B";
   generationSettings: GenerationParameters;
-  selectedNote: { trackId: string; noteId: string } | null;
+  selectedNote: SelectedNoteRef | null;
   isDirty(): boolean;
   setPlaying(isPlaying: boolean): void;
   setCurrentStep(step: number): void;
@@ -112,100 +120,31 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   updatePattern(update) {
-    set((state) => ({
-      activePattern:
-        update.length === undefined
-          ? {
-              ...state.activePattern,
-              ...update,
-              updatedAt: new Date().toISOString(),
-            }
-          : resizePatternLength({ ...state.activePattern, ...update }, update.length),
-      selectedNote: update.length === undefined ? state.selectedNote : null,
-    }));
+    set((state) => {
+      const result = updatePatternMetadata(state.activePattern, update, state.selectedNote);
+      return {
+        activePattern: result.pattern,
+        selectedNote: result.selectedNote,
+      };
+    });
   },
 
   updateTrackMapping(trackId, update) {
     set((state) => ({
-      activePattern: {
-        ...state.activePattern,
-        tracks: state.activePattern.tracks.map((track) =>
-          track.id === trackId
-            ? {
-                ...track,
-                ...update,
-                name: update.name ?? track.name,
-                midiChannel:
-                  update.midiChannel === undefined
-                    ? track.midiChannel
-                    : Math.round(clamp(update.midiChannel, 1, 16)),
-              }
-            : track,
-        ),
-        updatedAt: new Date().toISOString(),
-      },
+      activePattern: updatePatternTrackMapping(state.activePattern, trackId, update),
     }));
   },
 
   updateTrackPerformance(trackId, update) {
     set((state) => ({
-      activePattern: {
-        ...state.activePattern,
-        tracks: state.activePattern.tracks.map((track) =>
-          track.id === trackId
-            ? {
-                ...track,
-                ...update,
-                muted: update.muted ?? track.muted ?? false,
-                solo: update.solo ?? track.solo ?? false,
-                volume:
-                  update.volume === undefined
-                    ? track.volume ?? 1
-                    : clamp(update.volume, 0, 1),
-              }
-            : track,
-        ),
-        updatedAt: new Date().toISOString(),
-      },
+      activePattern: updatePatternTrackPerformance(state.activePattern, trackId, update),
     }));
   },
 
   toggleNote(trackId, step) {
     set((state) => {
-      let selectedNote = state.selectedNote;
-      const activePattern = {
-        ...state.activePattern,
-        tracks: state.activePattern.tracks.map((track) => {
-          if (track.id !== trackId) {
-            return track;
-          }
-
-          const existing = track.notes.find((note) => note.step === step);
-          if (existing) {
-            selectedNote = { trackId, noteId: existing.id };
-            return track;
-          }
-
-          const pitch = track.notes[0]?.pitch ?? 60;
-          const note = {
-            id: `note-${track.id}-${step}-${Date.now()}`,
-            step,
-            duration: track.instrumentType === "chord" ? 4 : 1,
-            velocity: step % 4 === 0 ? 0.9 : 0.7,
-            probability: 1,
-            pitch,
-            microTiming: 0,
-          };
-          selectedNote = { trackId, noteId: note.id };
-          return {
-            ...track,
-            notes: [...track.notes, note].sort((left, right) => left.step - right.step),
-          };
-        }),
-        updatedAt: new Date().toISOString(),
-      };
-
-      return { activePattern, selectedNote };
+      const result = togglePatternNote(state.activePattern, trackId, step);
+      return { activePattern: result.pattern, selectedNote: result.selectedNote };
     });
   },
 
@@ -220,26 +159,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     }
 
     set((state) => ({
-      activePattern: {
-        ...state.activePattern,
-        tracks: state.activePattern.tracks.map((track) => {
-          if (track.id !== selectedNote.trackId) {
-            return track;
-          }
-
-          return {
-            ...track,
-            notes: track.notes
-              .map((note) =>
-                note.id === selectedNote.noteId
-                  ? sanitizeNote({ ...note, ...update }, state.activePattern.length)
-                  : note,
-              )
-              .sort((left, right) => left.step - right.step),
-          };
-        }),
-        updatedAt: new Date().toISOString(),
-      },
+      activePattern: updatePatternNote(state.activePattern, selectedNote, update),
     }));
   },
 
@@ -251,18 +171,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
     set((state) => ({
       selectedNote: null,
-      activePattern: {
-        ...state.activePattern,
-        tracks: state.activePattern.tracks.map((track) =>
-          track.id === selectedNote.trackId
-            ? {
-                ...track,
-                notes: track.notes.filter((note) => note.id !== selectedNote.noteId),
-              }
-            : track,
-        ),
-        updatedAt: new Date().toISOString(),
-      },
+      activePattern: deletePatternNote(state.activePattern, selectedNote),
     }));
   },
 
@@ -486,18 +395,6 @@ function upsertPattern(library: PatternLibrary, pattern: Pattern): PatternLibrar
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function sanitizeNote(note: Note, patternLength: number): Note {
-  return {
-    ...note,
-    step: Math.round(clamp(note.step, 0, patternLength - 1)),
-    duration: Math.round(clamp(note.duration, 1, patternLength)),
-    velocity: clamp(note.velocity, 0.01, 1),
-    probability: clamp(note.probability, 0, 1),
-    pitch: Math.round(clamp(note.pitch, 0, 127)),
-    microTiming: clamp(note.microTiming ?? 0, -0.45, 0.45),
-  };
 }
 
 function stablePatternString(pattern: Pattern): string {
