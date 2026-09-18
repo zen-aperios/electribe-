@@ -6,6 +6,7 @@ import { MidiMappingPanel } from "../components/MidiMappingPanel";
 import { MidiPanel } from "../components/MidiPanel";
 import { NoteEditorPanel } from "../components/NoteEditorPanel";
 import { ParameterControls } from "../components/ParameterControls";
+import { PatternArrangementView } from "../components/PatternArrangementView";
 import { PatternLibraryPanel } from "../components/PatternLibraryPanel";
 import { PatternGrid } from "../components/PatternGrid";
 import { Transport } from "../components/Transport";
@@ -131,7 +132,10 @@ export function App() {
       <ParameterControls pattern={activePattern} />
 
       <section className="workspace">
-        <PatternGrid pattern={activePattern} currentStep={currentStep} />
+        <div className="pattern-workspace">
+          <PatternArrangementView pattern={activePattern} currentStep={currentStep} />
+          <PatternGrid pattern={activePattern} currentStep={currentStep} />
+        </div>
         <aside className="right-rail">
           <PatternLibraryPanel />
           <NoteEditorPanel />

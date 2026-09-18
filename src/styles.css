@@ -155,12 +155,53 @@ h1 {
   padding-top: 18px;
 }
 
+.pattern-workspace {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.arrangement-panel,
 .pattern-panel {
   overflow-x: auto;
   border: 1px solid #252d29;
   border-radius: 8px;
   background: rgba(9, 12, 10, 0.82);
   padding: 12px;
+}
+
+.arrangement-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px;
+  height: clamp(190px, 26vh, 300px);
+  overflow: hidden;
+}
+
+.arrangement-panel canvas {
+  width: 100%;
+  height: 100%;
+  min-width: 420px;
+  border-radius: 6px;
+}
+
+.arrangement-labels {
+  display: grid;
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  gap: 1px;
+  min-width: 0;
+}
+
+.arrangement-labels span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  color: #9aa69d;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .grid-header,
