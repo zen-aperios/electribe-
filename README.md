@@ -1,0 +1,39 @@
+# GHOST
+
+GHOST is a local-first generative pattern tool for Korg Electribe 2 workflows and future MIDI hardware support.
+
+The core interaction is:
+
+```text
+CURRENT PATTERN -> GHOST -> MANY POSSIBILITIES
+```
+
+Phase 1 focuses on a clean React/TypeScript prototype with a pure algorithmic engine, Web Audio preview, variation cards, JSON save/load, and testable MIDI/pattern conversion boundaries. There is no cloud backend and no external AI API.
+
+## Run
+
+```bash
+npm install
+npm run dev
+```
+
+## Verify
+
+```bash
+npm test
+npm run build
+```
+
+## Project Shape
+
+- `src/app` - application shell and state wiring
+- `src/components` - focused UI components
+- `src/engine` - pure TypeScript pattern model and generators
+- `src/audio` - Web Audio preview engine
+- `src/midi` - MIDI service, mapping, and MIDI file conversion boundaries
+- `src/storage` - local JSON persistence helpers
+- `src/tests` - core engine and persistence tests
+
+## Hardware Notes
+
+Direct Electribe 2 control is intentionally deferred. MIDI channel and part mapping live behind configurable service interfaces so real-device research can happen without rewriting the generator.
