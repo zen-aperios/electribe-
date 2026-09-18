@@ -8,7 +8,7 @@ The core interaction is:
 CURRENT PATTERN -> GHOST -> MANY POSSIBILITIES
 ```
 
-Phase 1 focuses on a clean React/TypeScript prototype with a pure algorithmic engine, Web Audio preview, variation cards, JSON save/load, and testable MIDI/pattern conversion boundaries. There is no cloud backend and no external AI API.
+Phase 1 focuses on a clean React/TypeScript application with a pure algorithmic engine, Web Audio preview, variation cards, JSON save/load, and testable MIDI/pattern conversion boundaries. There is no cloud backend and no external AI API.
 
 The app includes generic MIDI channel mapping today. Electribe-specific part, CC, NRPN, and SysEx behavior is intentionally deferred until it can be verified against hardware.
 
@@ -28,9 +28,21 @@ npm run dev
 ## Verify
 
 ```bash
+npm run lint
 npm test
 npm run build
 ```
+
+## Desktop Shell
+
+The repo includes a Tauri 2 shell scaffold for desktop packaging. Native MIDI is routed through a placeholder adapter until the Rust-side MIDI backend is implemented.
+
+```bash
+npm run desktop:dev
+npm run desktop:build
+```
+
+Desktop commands require the Tauri native toolchain, including Rust/Cargo and platform build tools.
 
 ## Project Shape
 
@@ -41,6 +53,7 @@ npm run build
 - `src/midi` - MIDI service, mapping, and MIDI file conversion boundaries
 - `src/storage` - local JSON persistence helpers
 - `src/tests` - core engine and persistence tests
+- `src-tauri` - Tauri desktop shell scaffold
 
 ## Hardware Notes
 

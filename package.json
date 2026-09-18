@@ -31,32 +31,35 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.2",
-    "vite": "^7.1.5",
-    "typescript": "^5.9.2",
+    "lucide-react": "^0.544.0",
+    "midi-file": "^1.2.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "zustand": "^5.0.8",
-    "lucide-react": "^0.544.0",
-    "midi-file": "^1.2.4"
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.4.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
-    "@vitest/browser": "^3.2.4",
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
     "jsdom": "^27.0.0",
     "typescript-eslint": "^8.44.0",
-    "vitest": "^3.2.4"
+    "vitest": "^5.0.1"
   }
 }
