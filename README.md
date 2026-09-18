@@ -12,6 +12,8 @@ Phase 1 focuses on a clean React/TypeScript prototype with a pure algorithmic en
 
 The app includes generic MIDI channel mapping today. Electribe-specific part, CC, NRPN, and SysEx behavior is intentionally deferred until it can be verified against hardware.
 
+Patterns support arbitrary step lengths from 1 to 64 steps. Resizing a pattern removes notes outside the new boundary and clamps note durations so exported data remains valid.
+
 ## Run
 
 ```bash
