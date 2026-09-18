@@ -20,13 +20,20 @@ export class AudioEngine {
     }
   }
 
+  get currentTime(): number {
+    return this.context?.currentTime ?? 0;
+  }
+
   playStep(pattern: Pattern, step: number): void {
+    this.playStepAt(pattern, step, this.currentTime + 0.015);
+  }
+
+  playStepAt(pattern: Pattern, step: number, startTime: number): void {
     if (!this.context || !this.master) {
       return;
     }
 
     const secondsPerStep = (60 / pattern.bpm) / 4;
-    const startTime = this.context.currentTime + 0.015;
 
     pattern.tracks.forEach((track) => {
       track.notes

@@ -57,7 +57,12 @@ export function App() {
 
     audio.stopPreview();
     void audio.ensureReady().then(() => {
-      sequencer.start(patternRef.current, setCurrentStep, (step) => audio.playStep(patternRef.current, step));
+      sequencer.start(
+        patternRef.current,
+        () => audio.currentTime,
+        setCurrentStep,
+        (step, audioTime) => audio.playStepAt(patternRef.current, step, audioTime),
+      );
     });
 
     return () => sequencer.stop();
