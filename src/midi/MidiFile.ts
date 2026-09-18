@@ -23,6 +23,19 @@ const TRACK_TYPES: InstrumentType[] = [
 ];
 const TRACK_NAMES = ["Kick", "Snare", "Hi-hat", "Perc", "Bass", "Lead", "Chord", "Other"];
 
+export type MidiImportQuantize = "1/8" | "1/16" | "1/32";
+export type MidiImportLength = "auto" | 8 | 16 | 32 | 64;
+
+export interface MidiImportOptions {
+  quantize: MidiImportQuantize;
+  length: MidiImportLength;
+}
+
+export const DEFAULT_MIDI_IMPORT_OPTIONS: MidiImportOptions = {
+  quantize: "1/16",
+  length: "auto",
+};
+
 export interface SimpleMidiExport {
   name: string;
   bpm: number;
@@ -119,10 +132,16 @@ export function exportPatternToMidiBytes(pattern: Pattern): Uint8Array {
   return Uint8Array.from(writeMidi(midi, { useByte9ForNoteOff: false }));
 }
 
-export function importPatternFromMidiBytes(bytes: ArrayLike<number>, name = "Imported MIDI"): Pattern {
+export function importPatternFromMidiBytes(
+  bytes: ArrayLike<number>,
+  name = "Imported MIDI",
+  options: Partial<MidiImportOptions> = {},
+): Pattern {
+  const importOptions = { ...DEFAULT_MIDI_IMPORT_OPTIONS, ...options };
   const midi = parseMidi(bytes);
   const ticksPerBeat = midi.header.ticksPerBeat ?? TICKS_PER_BEAT;
-  const ticksPerStep = ticksPerBeat / 4;
+  const quantizeTicks = ticksPerBeat / quantizeDivisor(importOptions.quantize);
+  const stepsPerSixteenth = quantizeTicks / (ticksPerBeat / 4);
   let bpm = 124;
   const tracks: Track[] = [];
 
@@ -160,8 +179,11 @@ export function importPatternFromMidiBytes(bytes: ArrayLike<number>, name = "Imp
         }
 
         active.delete(key);
-        const step = Math.max(0, Math.round(started.tick / ticksPerStep));
-        const duration = Math.max(1, Math.round((absoluteTick - started.tick) / ticksPerStep));
+        const step = Math.max(0, Math.round(started.tick / quantizeTicks) * stepsPerSixteenth);
+        const duration = Math.max(
+          stepsPerSixteenth,
+          Math.round((absoluteTick - started.tick) / quantizeTicks) * stepsPerSixteenth,
+        );
         notes.push(
           createNote({
             step,
@@ -196,7 +218,8 @@ export function importPatternFromMidiBytes(bytes: ArrayLike<number>, name = "Imp
   const maxStep = Math.max(
     ...tracks.flatMap((track) => track.notes.map((note) => note.step + note.duration)),
   );
-  const length = nearestPatternLength(maxStep);
+  const length =
+    importOptions.length === "auto" ? nearestPatternLength(maxStep) : importOptions.length;
 
   return createPatternFromTracks({
     name,
@@ -220,6 +243,18 @@ function inferMidiChannel(events: MidiEvent[]): number {
 
 function nearestPatternLength(steps: number): number {
   return [8, 16, 32, 64].find((length) => steps <= length) ?? 64;
+}
+
+function quantizeDivisor(quantize: MidiImportQuantize): number {
+  if (quantize === "1/8") {
+    return 2;
+  }
+
+  if (quantize === "1/32") {
+    return 8;
+  }
+
+  return 4;
 }
 
 function normalizeImportedTracks(tracks: Track[], length: number): Track[] {

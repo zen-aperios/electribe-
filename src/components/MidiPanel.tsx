@@ -2,8 +2,11 @@ import { Cable, FileDown, FileUp } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useGhostStore } from "../app/store";
 import {
+  DEFAULT_MIDI_IMPORT_OPTIONS,
   exportPatternToMidiBytes,
   importPatternFromMidiBytes,
+  type MidiImportLength,
+  type MidiImportQuantize,
 } from "../midi/MidiFile";
 import { WebMidiService, type MidiPortSummary } from "../midi/MidiService";
 import { exportPatternJson, importPatternJson } from "../storage/PatternStorage";
@@ -17,6 +20,12 @@ export function MidiPanel() {
   const [outputs, setOutputs] = useState<MidiPortSummary[]>([]);
   const [selectedOutputId, setSelectedOutputId] = useState("");
   const [status, setStatus] = useState("Ready");
+  const [importQuantize, setImportQuantize] = useState<MidiImportQuantize>(
+    DEFAULT_MIDI_IMPORT_OPTIONS.quantize,
+  );
+  const [importLength, setImportLength] = useState<MidiImportLength>(
+    DEFAULT_MIDI_IMPORT_OPTIONS.length,
+  );
 
   const exportJson = () => {
     downloadBytes(
@@ -57,7 +66,10 @@ export function MidiPanel() {
 
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const pattern = importPatternFromMidiBytes(bytes, file.name.replace(/\.midi?$/i, ""));
+      const pattern = importPatternFromMidiBytes(bytes, file.name.replace(/\.midi?$/i, ""), {
+        quantize: importQuantize,
+        length: importLength,
+      });
       importPattern(pattern);
       setStatus("MIDI imported");
     } catch (error) {
@@ -145,6 +157,38 @@ export function MidiPanel() {
           <FileUp size={15} />
           MIDI
         </button>
+      </div>
+      <div className="midi-import-options">
+        <label>
+          Quantize
+          <select
+            value={importQuantize}
+            onChange={(event) => setImportQuantize(event.target.value as MidiImportQuantize)}
+          >
+            <option value="1/8">1/8</option>
+            <option value="1/16">1/16</option>
+            <option value="1/32">1/32</option>
+          </select>
+        </label>
+        <label>
+          Length
+          <select
+            value={importLength}
+            onChange={(event) =>
+              setImportLength(
+                event.target.value === "auto"
+                  ? "auto"
+                  : (Number(event.target.value) as MidiImportLength),
+              )
+            }
+          >
+            <option value="auto">Auto</option>
+            <option value="8">8</option>
+            <option value="16">16</option>
+            <option value="32">32</option>
+            <option value="64">64</option>
+          </select>
+        </label>
       </div>
       <input
         ref={jsonInputRef}

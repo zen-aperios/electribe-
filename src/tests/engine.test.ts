@@ -216,6 +216,42 @@ describe("GHOST engine", () => {
     expect(imported.tracks[0].notes[0].step).toBe(pattern.tracks[0].notes[0].step);
   });
 
+  it("imports MIDI using an explicit pattern length", () => {
+    const pattern = createDefaultPattern();
+    const bytes = exportPatternToMidiBytes(pattern);
+    const imported = importPatternFromMidiBytes(bytes, "Fixed Length", { length: 32 });
+
+    expect(imported.length).toBe(32);
+    expect(validatePattern(imported)).toBe(true);
+  });
+
+  it("imports MIDI using coarse quantization", () => {
+    const pattern = createDefaultPattern();
+    const bytes = exportPatternToMidiBytes({
+      ...pattern,
+      tracks: pattern.tracks.map((track, index) =>
+        index === 0
+          ? {
+              ...track,
+              notes: [
+                createNote({
+                  step: 3,
+                  duration: 1,
+                  velocity: 1,
+                  probability: 1,
+                  pitch: 36,
+                }),
+              ],
+            }
+          : { ...track, notes: [] },
+      ),
+    });
+    const imported = importPatternFromMidiBytes(bytes, "Quantized", { quantize: "1/8" });
+
+    expect(imported.tracks[0].notes[0].step).toBe(4);
+    expect(validatePattern(imported)).toBe(true);
+  });
+
   it("merges overflow MIDI tracks into the eighth internal track", () => {
     const pattern = createDefaultPattern();
     const overflowPitch = 91;
