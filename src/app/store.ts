@@ -31,6 +31,7 @@ interface GhostState {
   setPreservation(key: keyof PreservationSettings, value: number): void;
   updatePattern(update: Partial<Pattern>): void;
   updateTrackMapping(trackId: string, update: Pick<Partial<Track>, "name" | "midiChannel">): void;
+  updateTrackPerformance(trackId: string, update: Pick<Partial<Track>, "muted" | "solo" | "volume">): void;
   toggleNote(trackId: string, step: number): void;
   selectNote(trackId: string, noteId: string): void;
   updateSelectedNote(update: Partial<Note>): void;
@@ -129,6 +130,29 @@ export const useGhostStore = create<GhostState>((set, get) => ({
                   update.midiChannel === undefined
                     ? track.midiChannel
                     : Math.round(clamp(update.midiChannel, 1, 16)),
+              }
+            : track,
+        ),
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  },
+
+  updateTrackPerformance(trackId, update) {
+    set((state) => ({
+      activePattern: {
+        ...state.activePattern,
+        tracks: state.activePattern.tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                ...update,
+                muted: update.muted ?? track.muted ?? false,
+                solo: update.solo ?? track.solo ?? false,
+                volume:
+                  update.volume === undefined
+                    ? track.volume ?? 1
+                    : clamp(update.volume, 0, 1),
               }
             : track,
         ),

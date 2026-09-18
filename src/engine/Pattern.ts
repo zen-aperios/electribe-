@@ -25,6 +25,9 @@ export interface Track {
   name: string;
   midiChannel: number;
   instrumentType: InstrumentType;
+  muted: boolean;
+  solo: boolean;
+  volume: number;
   notes: Note[];
 }
 
@@ -128,7 +131,7 @@ export function clonePattern(pattern: Pattern, name = pattern.name): Pattern {
     id: cryptoId("pattern"),
     name,
     tracks: pattern.tracks.map((track) => ({
-      ...track,
+      ...normalizeTrackPerformance(track),
       id: cryptoId(track.instrumentType),
       notes: track.notes.map((note) => ({ ...note, id: cryptoId("note") })),
     })),
@@ -144,7 +147,7 @@ export function createPatternFromTracks(
     ...pattern,
     id: cryptoId("pattern"),
     tracks: pattern.tracks.map((track) => ({
-      ...track,
+      ...normalizeTrackPerformance(track),
       id: track.id || cryptoId(track.instrumentType),
       notes: track.notes.map((note) => createNote(note)),
     })),
@@ -159,7 +162,7 @@ export function resizePatternLength(pattern: Pattern, length: number): Pattern {
     ...pattern,
     length: nextLength,
     tracks: pattern.tracks.map((track) => ({
-      ...track,
+      ...normalizeTrackPerformance(track),
       notes: track.notes
         .filter((note) => note.step < nextLength)
         .map((note) => ({
@@ -186,7 +189,9 @@ export function validatePattern(pattern: Pattern): boolean {
           note.probability >= 0 &&
           note.probability <= 1 &&
           note.pitch >= 0 &&
-          note.pitch <= 127,
+          note.pitch <= 127 &&
+          (track.volume ?? 1) >= 0 &&
+          (track.volume ?? 1) <= 1,
       ),
     )
   );
@@ -226,10 +231,28 @@ function makeTrack(
     name,
     midiChannel,
     instrumentType,
+    muted: false,
+    solo: false,
+    volume: 1,
     notes: steps.map((step) =>
       createNote({ step, duration, velocity, probability: 1, pitch }),
     ),
   };
+}
+
+export function normalizeTrackPerformance(track: Track): Track {
+  return {
+    ...track,
+    muted: track.muted ?? false,
+    solo: track.solo ?? false,
+    volume: clamp(track.volume ?? 1, 0, 1),
+  };
+}
+
+export function audibleTracks(pattern: Pattern): Track[] {
+  const normalized = pattern.tracks.map(normalizeTrackPerformance);
+  const hasSolo = normalized.some((track) => track.solo);
+  return normalized.filter((track) => (hasSolo ? track.solo : !track.muted));
 }
 
 export function cryptoId(prefix: string): string {

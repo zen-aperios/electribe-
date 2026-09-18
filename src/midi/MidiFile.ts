@@ -181,6 +181,9 @@ export function importPatternFromMidiBytes(bytes: ArrayLike<number>, name = "Imp
         name: trackName,
         midiChannel: inferMidiChannel(midiTrack) + 1,
         instrumentType: TRACK_TYPES[index] ?? "other",
+        muted: false,
+        solo: false,
+        volume: 1,
         notes,
       });
     }
@@ -229,6 +232,9 @@ function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
       name: TRACK_NAMES[otherIndex],
       midiChannel: otherIndex + 1,
       instrumentType: TRACK_TYPES[otherIndex],
+      muted: false,
+      solo: false,
+      volume: 1,
       notes: [],
     };
 
@@ -247,6 +253,9 @@ function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
       name: TRACK_NAMES[index],
       midiChannel: index + 1,
       instrumentType: TRACK_TYPES[index],
+      muted: false,
+      solo: false,
+      volume: 1,
       notes: [],
     });
   }

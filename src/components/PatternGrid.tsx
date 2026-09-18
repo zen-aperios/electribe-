@@ -11,7 +11,7 @@ export function PatternGrid({ pattern, currentStep }: PatternGridProps) {
 
   return (
     <section className="pattern-panel">
-      <div className="grid-header" style={{ gridTemplateColumns: `108px repeat(${pattern.length}, minmax(18px, 1fr))` }}>
+      <div className="grid-header" style={{ gridTemplateColumns: `168px repeat(${pattern.length}, minmax(18px, 1fr))` }}>
         <span>{pattern.length} steps</span>
         {steps.map((step) => (
           <span key={step} className={step === currentStep ? "playing" : ""}>

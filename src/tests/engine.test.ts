@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createDefaultPattern,
   createNote,
+  audibleTracks,
   notesEqual,
   resizePatternLength,
   validatePattern,
@@ -171,6 +172,38 @@ describe("GHOST engine", () => {
     expect(events.find((event) => event.pitch === 36)?.channel).toBe(10);
   });
 
+  it("filters audible tracks using mute and solo state", () => {
+    const pattern = createDefaultPattern();
+    const muted = {
+      ...pattern,
+      tracks: pattern.tracks.map((track, index) =>
+        index === 0 ? { ...track, muted: true } : track,
+      ),
+    };
+    const soloed = {
+      ...muted,
+      tracks: muted.tracks.map((track, index) =>
+        index === 0 ? { ...track, solo: true } : track,
+      ),
+    };
+
+    expect(audibleTracks(muted).some((track) => track.instrumentType === "kick")).toBe(false);
+    expect(audibleTracks(soloed).map((track) => track.instrumentType)).toEqual(["kick"]);
+  });
+
+  it("scales MIDI velocity by track volume", () => {
+    const pattern = createDefaultPattern();
+    const quiet = {
+      ...pattern,
+      tracks: pattern.tracks.map((track, index) =>
+        index === 0 ? { ...track, volume: 0.5 } : track,
+      ),
+    };
+    const events = patternToMidiEvents(quiet);
+
+    expect(events.find((event) => event.pitch === 36)?.velocity).toBe(57);
+  });
+
   it("exports and imports MIDI bytes", () => {
     const pattern = createDefaultPattern();
     const bytes = exportPatternToMidiBytes(pattern);
@@ -195,6 +228,9 @@ describe("GHOST engine", () => {
           name: "Overflow",
           midiChannel: 9,
           instrumentType: "other",
+          muted: false,
+          solo: false,
+          volume: 1,
           notes: [
             createNote({
               step: 5,

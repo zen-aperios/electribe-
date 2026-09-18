@@ -1,4 +1,4 @@
-import type { Pattern } from "../engine/Pattern";
+import { audibleTracks, type Pattern } from "../engine/Pattern";
 import { playHat, playKick, playSnare } from "./DrumSynth";
 import { midiToFrequency, playTone } from "./Synth";
 
@@ -35,17 +35,18 @@ export class AudioEngine {
 
     const secondsPerStep = (60 / pattern.bpm) / 4;
 
-    pattern.tracks.forEach((track) => {
+    audibleTracks(pattern).forEach((track) => {
       track.notes
         .filter((note) => note.step === step && Math.random() <= note.probability)
         .forEach((note) => {
           const time = startTime + (note.microTiming ?? 0) * secondsPerStep;
+          const velocity = note.velocity * track.volume;
           if (track.instrumentType === "kick") {
-            playKick(this.context!, this.master!, time, note.velocity);
+            playKick(this.context!, this.master!, time, velocity);
           } else if (track.instrumentType === "snare") {
-            playSnare(this.context!, this.master!, time, note.velocity);
+            playSnare(this.context!, this.master!, time, velocity);
           } else if (track.instrumentType === "hat") {
-            playHat(this.context!, this.master!, time, note.velocity);
+            playHat(this.context!, this.master!, time, velocity);
           } else {
             playTone(
               this.context!,
@@ -53,7 +54,7 @@ export class AudioEngine {
               midiToFrequency(note.pitch),
               time,
               secondsPerStep * note.duration,
-              note.velocity,
+              velocity,
             );
           }
         });

@@ -1,5 +1,5 @@
 import type { Pattern } from "../engine/Pattern";
-import { patternToMidiEvents } from "./MidiMapper";
+import { patternToAudibleMidiEvents } from "./MidiMapper";
 
 export interface MidiPortSummary {
   id: string;
@@ -75,7 +75,7 @@ export class WebMidiService implements MidiService {
 
     const stepDurationMs = (60_000 / pattern.bpm) / 4;
     const now = window.performance.now();
-    patternToMidiEvents(pattern).forEach((event) => {
+    patternToAudibleMidiEvents(pattern).forEach((event) => {
       const midiChannel = Math.max(0, Math.min(15, event.channel - 1));
       const startTime = now + event.startStep * stepDurationMs;
       const endTime = startTime + event.durationSteps * stepDurationMs;
