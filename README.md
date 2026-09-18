@@ -14,6 +14,8 @@ The app includes generic MIDI channel mapping today. Electribe-specific part, CC
 
 Patterns support arbitrary step lengths from 1 to 64 steps. Resizing a pattern removes notes outside the new boundary and clamps note durations so exported data remains valid.
 
+Each track has performance controls for mute, solo, and volume. Audio preview and live Web MIDI output respect those controls; MIDI file export keeps the full pattern data.
+
 ## Run
 
 ```bash
