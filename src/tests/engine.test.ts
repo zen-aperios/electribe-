@@ -74,6 +74,15 @@ describe("GHOST engine", () => {
     expect(notesEqual(pattern.tracks[0].notes, variation.tracks[0].notes)).toBe(true);
   });
 
+  it("scales variation mutation amount from generation parameters", () => {
+    const pattern = createDefaultPattern();
+    const subtle = generateVariations(pattern, "strength", { mutationStrength: 0.5 });
+    const intense = generateVariations(pattern, "strength", { mutationStrength: 1.5 });
+
+    expect(subtle[5].mutationAmount).toBe(38);
+    expect(intense[5].mutationAmount).toBe(100);
+  });
+
   it("converts patterns to MIDI note events", () => {
     const pattern = createDefaultPattern();
     const events = patternToMidiEvents(pattern);

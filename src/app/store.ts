@@ -2,8 +2,11 @@ import { create } from "zustand";
 import {
   clonePattern,
   createDefaultPattern,
+  DEFAULT_PRESERVATION,
+  type GenerationParameters,
   type Pattern,
   type PatternVariation,
+  type PreservationSettings,
 } from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
@@ -17,8 +20,11 @@ interface GhostState {
   isPlaying: boolean;
   currentStep: number;
   compareMode: "A" | "B";
+  generationSettings: GenerationParameters;
   setPlaying(isPlaying: boolean): void;
   setCurrentStep(step: number): void;
+  setMutationStrength(mutationStrength: number): void;
+  setPreservation(key: keyof PreservationSettings, value: number): void;
   updatePattern(update: Partial<Pattern>): void;
   toggleNote(trackId: string, step: number): void;
   generate(seed?: string): void;
@@ -51,6 +57,11 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   isPlaying: false,
   currentStep: 0,
   compareMode: "A",
+  generationSettings: {
+    variationCount: 6,
+    mutationStrength: 1,
+    preservation: DEFAULT_PRESERVATION,
+  },
 
   setPlaying(isPlaying) {
     set({ isPlaying });
@@ -58,6 +69,27 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   setCurrentStep(step) {
     set({ currentStep: step });
+  },
+
+  setMutationStrength(mutationStrength) {
+    set((state) => ({
+      generationSettings: {
+        ...state.generationSettings,
+        mutationStrength: clamp(mutationStrength, 0, 1.5),
+      },
+    }));
+  },
+
+  setPreservation(key, value) {
+    set((state) => ({
+      generationSettings: {
+        ...state.generationSettings,
+        preservation: {
+          ...state.generationSettings.preservation,
+          [key]: clamp(Math.round(value), 0, 100),
+        },
+      },
+    }));
   },
 
   updatePattern(update) {
@@ -113,7 +145,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   generate(seed = Date.now().toString(36)) {
     const sourcePattern = get().activePattern;
-    const variations = generateVariations(sourcePattern, seed);
+    const variations = generateVariations(sourcePattern, seed, get().generationSettings);
     set({
       sourcePattern,
       variations,
@@ -313,4 +345,8 @@ function upsertPattern(library: PatternLibrary, pattern: Pattern): PatternLibrar
       ...library.patterns.filter((candidate) => candidate.id !== pattern.id),
     ],
   };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }

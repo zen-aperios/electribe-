@@ -1,8 +1,18 @@
-import type { Pattern, ScaleName } from "../engine/Pattern";
+import type { Pattern, PreservationSettings, ScaleName } from "../engine/Pattern";
 import { useGhostStore } from "../app/store";
 
 const SCALES: ScaleName[] = ["minor", "major", "dorian", "pentatonic"];
 const KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const PRESERVATION_CONTROLS: Array<{
+  key: keyof PreservationSettings;
+  label: string;
+}> = [
+  { key: "kick", label: "Kick" },
+  { key: "bass", label: "Bass" },
+  { key: "melody", label: "Melody" },
+  { key: "groove", label: "Groove" },
+  { key: "structure", label: "Structure" },
+];
 
 interface ParameterControlsProps {
   pattern: Pattern;
@@ -10,6 +20,9 @@ interface ParameterControlsProps {
 
 export function ParameterControls({ pattern }: ParameterControlsProps) {
   const updatePattern = useGhostStore((state) => state.updatePattern);
+  const generationSettings = useGhostStore((state) => state.generationSettings);
+  const setMutationStrength = useGhostStore((state) => state.setMutationStrength);
+  const setPreservation = useGhostStore((state) => state.setPreservation);
 
   return (
     <section className="parameter-strip">
@@ -69,6 +82,30 @@ export function ParameterControls({ pattern }: ParameterControlsProps) {
           ))}
         </select>
       </label>
+      <label className="wide-control">
+        Mutate {Math.round(generationSettings.mutationStrength * 100)}%
+        <input
+          type="range"
+          min="0"
+          max="150"
+          value={Math.round(generationSettings.mutationStrength * 100)}
+          onChange={(event) => setMutationStrength(Number(event.target.value) / 100)}
+        />
+      </label>
+      <div className="preservation-controls">
+        {PRESERVATION_CONTROLS.map((control) => (
+          <label key={control.key}>
+            {control.label} {generationSettings.preservation[control.key]}%
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={generationSettings.preservation[control.key]}
+              onChange={(event) => setPreservation(control.key, Number(event.target.value))}
+            />
+          </label>
+        ))}
+      </div>
     </section>
   );
 }

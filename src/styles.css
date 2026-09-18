@@ -123,6 +123,21 @@ h1 {
   text-transform: uppercase;
 }
 
+.parameter-strip .wide-control {
+  min-width: 150px;
+}
+
+.preservation-controls {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  gap: 10px;
+  flex: 1 1 520px;
+}
+
+.preservation-controls label {
+  min-width: 0;
+}
+
 .parameter-strip input,
 .parameter-strip select {
   min-height: 34px;
@@ -424,6 +439,10 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  .preservation-controls {
+    grid-template-columns: repeat(3, minmax(92px, 1fr));
+  }
+
   .variation-grid {
     grid-template-columns: repeat(2, minmax(150px, 1fr));
   }
@@ -441,5 +460,9 @@ h1 {
 
   .variation-grid {
     grid-template-columns: 1fr;
+  }
+
+  .preservation-controls {
+    grid-template-columns: repeat(2, minmax(92px, 1fr));
   }
 }
