@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createDefaultPattern, notesEqual, validatePattern } from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
-import { mutateDensity } from "../engine/PatternMutator";
+import {
+  mirrorPhrase,
+  mutateDensity,
+  swapRhythmicCells,
+} from "../engine/PatternMutator";
 import { createSeededRandom } from "../engine/random";
 import { getScalePitches } from "../engine/MelodyGenerator";
 import { patternToMidiEvents } from "../midi/MidiMapper";
@@ -43,6 +47,28 @@ describe("GHOST engine", () => {
     const changed = pattern.tracks.some((track, index) => !notesEqual(track.notes, mutated.tracks[index].notes));
 
     expect(changed).toBe(true);
+  });
+
+  it("can swap rhythmic cells while keeping notes valid", () => {
+    const pattern = createDefaultPattern();
+    const swapped = swapRhythmicCells(pattern, 1, createSeededRandom("cells"));
+
+    expect(validatePattern(swapped)).toBe(true);
+    expect(
+      swapped.tracks.some((track, index) => !notesEqual(track.notes, pattern.tracks[index].notes)),
+    ).toBe(true);
+  });
+
+  it("can mirror melodic phrases inside the selected scale", () => {
+    const pattern = createDefaultPattern();
+    const mirrored = mirrorPhrase(pattern, 1, createSeededRandom("mirror"));
+    const scalePitches = new Set(getScalePitches(pattern));
+    const melodicNotes = mirrored.tracks
+      .filter((track) => ["bass", "lead", "chord", "other"].includes(track.instrumentType))
+      .flatMap((track) => track.notes);
+
+    expect(validatePattern(mirrored)).toBe(true);
+    expect(melodicNotes.every((note) => scalePitches.has(note.pitch))).toBe(true);
   });
 
   it("keeps generated melodic notes inside the scale", () => {

@@ -98,6 +98,27 @@ export function mutatePitch(
   });
 }
 
+export function mutateOctave(
+  pattern: Pattern,
+  strength: number,
+  random: RandomSource,
+): Pattern {
+  return mapNotes(pattern, (note, track) => {
+    if (!["bass", "lead", "chord", "other"].includes(track.instrumentType)) {
+      return note;
+    }
+
+    if (!random.chance(strength * 0.35)) {
+      return note;
+    }
+
+    return {
+      ...note,
+      pitch: clamp(note.pitch + random.pick([-12, 12]), 24, 96),
+    };
+  });
+}
+
 export function mutateDuration(
   pattern: Pattern,
   strength: number,
@@ -180,6 +201,98 @@ export function addGhostNotes(
   return next;
 }
 
+export function swapRhythmicCells(
+  pattern: Pattern,
+  strength: number,
+  random: RandomSource,
+): Pattern {
+  if (strength <= 0 || pattern.length < 8) {
+    return clonePattern(pattern);
+  }
+
+  const cellSize = 4;
+  const cellCount = Math.floor(pattern.length / cellSize);
+  if (cellCount < 2) {
+    return clonePattern(pattern);
+  }
+
+  const firstCell = random.integer(0, cellCount - 1);
+  let secondCell = random.integer(0, cellCount - 1);
+  if (firstCell === secondCell) {
+    secondCell = (secondCell + 1) % cellCount;
+  }
+
+  const firstStart = firstCell * cellSize;
+  const secondStart = secondCell * cellSize;
+
+  return mapNotes(pattern, (note, track) => {
+    if (track.instrumentType === "kick" && isStrongStep(note.step, pattern)) {
+      return note;
+    }
+
+    if (!random.chance(strength * 0.65)) {
+      return note;
+    }
+
+    if (note.step >= firstStart && note.step < firstStart + cellSize) {
+      return { ...note, step: secondStart + (note.step - firstStart) };
+    }
+
+    if (note.step >= secondStart && note.step < secondStart + cellSize) {
+      return { ...note, step: firstStart + (note.step - secondStart) };
+    }
+
+    return note;
+  });
+}
+
+export function reversePhrase(
+  pattern: Pattern,
+  strength: number,
+  random: RandomSource,
+): Pattern {
+  if (strength <= 0) {
+    return clonePattern(pattern);
+  }
+
+  return mapNotes(pattern, (note, track) => {
+    if (["kick", "snare"].includes(track.instrumentType) || !random.chance(strength * 0.45)) {
+      return note;
+    }
+
+    return { ...note, step: pattern.length - 1 - note.step };
+  });
+}
+
+export function mirrorPhrase(
+  pattern: Pattern,
+  strength: number,
+  random: RandomSource,
+): Pattern {
+  if (strength <= 0) {
+    return clonePattern(pattern);
+  }
+
+  const midpoint = (pattern.length - 1) / 2;
+  return mapNotes(pattern, (note, track) => {
+    if (!["bass", "lead", "chord", "other"].includes(track.instrumentType)) {
+      return note;
+    }
+
+    if (!random.chance(strength * 0.45)) {
+      return note;
+    }
+
+    const mirroredStep = Math.round(midpoint - (note.step - midpoint));
+    const mirroredPitch = constrainPitchToScale(120 - note.pitch, pattern);
+    return {
+      ...note,
+      step: wrap(mirroredStep, pattern.length),
+      pitch: mirroredPitch,
+    };
+  });
+}
+
 export function applyControlledMutation(
   pattern: Pattern,
   strength: number,
@@ -189,7 +302,11 @@ export function applyControlledMutation(
   next = mutateVelocity(next, strength, random);
   next = mutateDensity(next, strength, random);
   next = shiftNotes(next, strength, random);
+  next = swapRhythmicCells(next, Math.min(1, strength * 0.75), random);
   next = mutatePitch(next, strength, random);
+  next = mutateOctave(next, Math.min(1, strength * 0.6), random);
+  next = reversePhrase(next, Math.max(0, strength - 0.35), random);
+  next = mirrorPhrase(next, Math.max(0, strength - 0.45), random);
   next = mutateDuration(next, strength, random);
   next = mutateProbability(next, Math.min(1, strength * 0.5), random);
   next = addGhostNotes(next, strength, random);
