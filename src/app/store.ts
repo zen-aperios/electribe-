@@ -40,6 +40,10 @@ import {
   type SelectedNoteRef,
 } from "./patternActions";
 import { loadLibraryState, persistLibrary } from "./storePersistence";
+import {
+  activateLibraryPatternState,
+  refreshActiveLibraryPatternState,
+} from "./storeStateActions";
 
 interface GhostState {
   library: PatternLibrary;
@@ -255,43 +259,19 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     }
 
     persistLibrary(result.library);
-    set({
-      library: result.library,
-      activePattern: result.activePattern,
-      sourcePattern: result.activePattern,
-      variations: [],
-      selectedVariationId: null,
-      selectedNote: null,
-      compareMode: "A",
-    });
+    set(activateLibraryPatternState(result.library, result.activePattern));
   },
 
   createPattern() {
     const result = createLibraryPattern(get().library);
     persistLibrary(result.library);
-    set({
-      library: result.library,
-      activePattern: result.activePattern,
-      sourcePattern: result.activePattern,
-      variations: [],
-      selectedVariationId: null,
-      selectedNote: null,
-      compareMode: "A",
-    });
+    set(activateLibraryPatternState(result.library, result.activePattern));
   },
 
   duplicateActivePattern() {
     const result = duplicateLibraryPattern(get().library, get().activePattern);
     persistLibrary(result.library);
-    set({
-      library: result.library,
-      activePattern: result.activePattern,
-      sourcePattern: result.activePattern,
-      variations: [],
-      selectedVariationId: null,
-      selectedNote: null,
-      compareMode: "A",
-    });
+    set(activateLibraryPatternState(result.library, result.activePattern));
   },
 
   renameActivePattern(name) {
@@ -301,39 +281,18 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     }
 
     persistLibrary(result.library);
-    set({
-      library: result.library,
-      activePattern: result.activePattern,
-      sourcePattern: result.activePattern,
-      selectedNote: null,
-    });
+    set(refreshActiveLibraryPatternState(result.library, result.activePattern));
   },
 
   deleteActivePattern() {
     const result = deleteLibraryPattern(get().library, get().activePattern);
     persistLibrary(result.library);
-    set({
-      library: result.library,
-      activePattern: result.activePattern,
-      sourcePattern: result.activePattern,
-      variations: [],
-      selectedVariationId: null,
-      selectedNote: null,
-      compareMode: "A",
-    });
+    set(activateLibraryPatternState(result.library, result.activePattern));
   },
 
   importPattern(pattern) {
     const result = importPatternToLibrary(get().library, pattern);
     persistLibrary(result.library);
-    set({
-      library: result.library,
-      activePattern: result.activePattern,
-      sourcePattern: result.activePattern,
-      variations: [],
-      selectedVariationId: null,
-      selectedNote: null,
-      compareMode: "A",
-    });
+    set(activateLibraryPatternState(result.library, result.activePattern));
   },
 }));
