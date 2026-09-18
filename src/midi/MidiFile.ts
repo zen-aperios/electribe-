@@ -204,7 +204,7 @@ export function importPatternFromMidiBytes(bytes: ArrayLike<number>, name = "Imp
     timeSignature: [4, 4],
     key: "C",
     scale: "minor",
-    tracks: padTracks(tracks.slice(0, 8), length),
+    tracks: normalizeImportedTracks(tracks, length),
   });
 }
 
@@ -219,8 +219,27 @@ function nearestPatternLength(steps: number): number {
   return [8, 16, 32, 64].find((length) => steps <= length) ?? 64;
 }
 
-function padTracks(tracks: Track[], length: number): Track[] {
-  const padded = [...tracks];
+function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
+  const normalized = tracks.slice(0, 8);
+  const overflow = tracks.slice(8);
+  if (overflow.length > 0) {
+    const otherIndex = 7;
+    const otherTrack = normalized[otherIndex] ?? {
+      id: "midi-track-8",
+      name: TRACK_NAMES[otherIndex],
+      midiChannel: otherIndex + 1,
+      instrumentType: TRACK_TYPES[otherIndex],
+      notes: [],
+    };
+
+    normalized[otherIndex] = {
+      ...otherTrack,
+      name: "Other",
+      notes: [...otherTrack.notes, ...overflow.flatMap((track) => track.notes)],
+    };
+  }
+
+  const padded = [...normalized];
   while (padded.length < 8) {
     const index = padded.length;
     padded.push({
@@ -234,6 +253,24 @@ function padTracks(tracks: Track[], length: number): Track[] {
 
   return padded.map((track) => ({
     ...track,
-    notes: track.notes.filter((note) => note.step < length),
+    instrumentType: TRACK_TYPES[padded.indexOf(track)] ?? "other",
+    notes: dedupeImportedNotes(
+      track.notes
+        .filter((note) => note.step < length)
+        .sort((left, right) => left.step - right.step || left.pitch - right.pitch),
+    ),
   }));
+}
+
+function dedupeImportedNotes(notes: Note[]): Note[] {
+  const seen = new Set<string>();
+  return notes.filter((note) => {
+    const key = `${note.step}:${note.pitch}:${note.duration}`;
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDefaultPattern, notesEqual, validatePattern } from "../engine/Pattern";
+import { createDefaultPattern, createNote, notesEqual, validatePattern } from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import {
   mirrorPhrase,
@@ -127,6 +127,36 @@ describe("GHOST engine", () => {
     expect(imported.bpm).toBe(pattern.bpm);
     expect(imported.tracks.some((track) => track.notes.length > 0)).toBe(true);
     expect(imported.tracks[0].notes[0].step).toBe(pattern.tracks[0].notes[0].step);
+  });
+
+  it("merges overflow MIDI tracks into the eighth internal track", () => {
+    const pattern = createDefaultPattern();
+    const overflowPitch = 91;
+    const bytes = exportPatternToMidiBytes({
+      ...pattern,
+      tracks: [
+        ...pattern.tracks,
+        {
+          id: "overflow-track",
+          name: "Overflow",
+          midiChannel: 9,
+          instrumentType: "other",
+          notes: [
+            createNote({
+              step: 5,
+              duration: 1,
+              velocity: 0.8,
+              probability: 1,
+              pitch: overflowPitch,
+            }),
+          ],
+        },
+      ],
+    });
+    const imported = importPatternFromMidiBytes(bytes, "Overflow MIDI");
+
+    expect(imported.tracks).toHaveLength(8);
+    expect(imported.tracks[7].notes.some((note) => note.pitch === overflowPitch)).toBe(true);
   });
 
   it("round trips JSON save/load", () => {
