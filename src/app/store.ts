@@ -9,8 +9,14 @@ import {
   type PreservationSettings,
   type Track,
 } from "../engine/Pattern";
-import { generateVariations } from "../engine/PatternGenerator";
 import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
+import {
+  generateGhostWorkflow,
+  keepSourceWorkflowPattern,
+  selectWorkflowVariation,
+  setWorkflowCompareMode,
+  useSelectedWorkflowVariation,
+} from "./ghostWorkflowActions";
 import {
   createLibraryPattern,
   deleteLibraryPattern,
@@ -182,59 +188,40 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   generate(seed = Date.now().toString(36)) {
-    const sourcePattern = get().activePattern;
-    const variations = generateVariations(sourcePattern, seed, get().generationSettings);
+    const workflow = generateGhostWorkflow(get().activePattern, seed, get().generationSettings);
     set({
-      sourcePattern,
-      variations,
-      selectedVariationId: variations[0]?.id ?? null,
-      activePattern: variations[0]?.pattern ?? sourcePattern,
+      ...workflow,
       selectedNote: null,
-      compareMode: "B",
     });
   },
 
   selectVariation(id) {
-    const variation = get().variations.find((candidate) => candidate.id === id);
-    if (!variation) {
+    const workflow = selectWorkflowVariation(get().variations, id);
+    if (!workflow) {
       return;
     }
     set({
-      selectedVariationId: id,
-      activePattern: variation.pattern,
+      ...workflow,
       selectedNote: null,
-      compareMode: "B",
     });
   },
 
   useSelectedVariation() {
-    const selected = get().variations.find((variation) => variation.id === get().selectedVariationId);
-    if (!selected) {
+    const workflow = useSelectedWorkflowVariation(get().variations, get().selectedVariationId);
+    if (!workflow) {
       return;
     }
 
-    const activePattern = {
-      ...selected.pattern,
-      name: selected.pattern.name.replace(` / ${selected.label}`, ""),
-    };
-
     set({
-      activePattern,
-      sourcePattern: activePattern,
-      variations: [],
-      selectedVariationId: null,
+      ...workflow,
       selectedNote: null,
-      compareMode: "A",
     });
   },
 
   keepA() {
     set((state) => ({
-      activePattern: state.sourcePattern,
-      variations: [],
-      selectedVariationId: null,
+      ...keepSourceWorkflowPattern(state.sourcePattern),
       selectedNote: null,
-      compareMode: "A",
     }));
   },
 
@@ -243,10 +230,14 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   setCompareMode(mode) {
-    const selected = get().variations.find((variation) => variation.id === get().selectedVariationId);
     set((state) => ({
-      compareMode: mode,
-      activePattern: mode === "A" ? state.sourcePattern : selected?.pattern ?? state.activePattern,
+      ...setWorkflowCompareMode(
+        mode,
+        state.sourcePattern,
+        state.activePattern,
+        state.variations,
+        state.selectedVariationId,
+      ),
       selectedNote: null,
     }));
   },
