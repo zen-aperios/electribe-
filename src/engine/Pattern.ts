@@ -1,3 +1,8 @@
+import {
+  normalizeElectribeParameters,
+  type ElectribeParameterValues,
+} from "../midi/ElectribeParameters";
+
 export type InstrumentType =
   | "kick"
   | "snare"
@@ -28,6 +33,7 @@ export interface Track {
   muted: boolean;
   solo: boolean;
   volume: number;
+  electribeParameters: ElectribeParameterValues;
   notes: Note[];
 }
 
@@ -188,10 +194,13 @@ export function validatePattern(pattern: Pattern): boolean {
           note.velocity <= 1 &&
           note.probability >= 0 &&
           note.probability <= 1 &&
-          note.pitch >= 0 &&
-          note.pitch <= 127 &&
-          (track.volume ?? 1) >= 0 &&
-          (track.volume ?? 1) <= 1,
+              note.pitch >= 0 &&
+              note.pitch <= 127 &&
+              (track.volume ?? 1) >= 0 &&
+              (track.volume ?? 1) <= 1 &&
+              Object.values(normalizeElectribeParameters(track.electribeParameters)).every(
+                (value) => value >= 0 && value <= 127,
+              ),
       ),
     )
   );
@@ -234,6 +243,7 @@ function makeTrack(
     muted: false,
     solo: false,
     volume: 1,
+    electribeParameters: normalizeElectribeParameters(),
     notes: steps.map((step) =>
       createNote({ step, duration, velocity, probability: 1, pitch }),
     ),
@@ -246,6 +256,7 @@ export function normalizeTrackPerformance(track: Track): Track {
     muted: track.muted ?? false,
     solo: track.solo ?? false,
     volume: clamp(track.volume ?? 1, 0, 1),
+    electribeParameters: normalizeElectribeParameters(track.electribeParameters),
   };
 }
 

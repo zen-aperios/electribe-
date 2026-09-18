@@ -427,9 +427,9 @@ h1 {
 }
 
 .mapping-header,
-.mapping-row {
+.mapping-row-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 54px;
+  grid-template-columns: 38px minmax(0, 1fr) 72px 54px;
   gap: 8px;
   align-items: center;
 }
@@ -442,10 +442,23 @@ h1 {
 
 .mapping-rows {
   display: grid;
-  gap: 6px;
+  gap: 10px;
 }
 
-.mapping-row input {
+.mapping-row {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #202622;
+  padding-top: 10px;
+}
+
+.mapping-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.mapping-row input,
+.electribe-parameter-grid input {
   min-width: 0;
   min-height: 30px;
   border: 1px solid #313936;
@@ -453,6 +466,48 @@ h1 {
   background: #0e1210;
   color: #f1f4ed;
   padding: 0 8px;
+}
+
+.part-pill,
+.role-pill {
+  display: inline-grid;
+  place-items: center;
+  min-height: 28px;
+  border: 1px solid #313936;
+  border-radius: 6px;
+  color: #cbd5cc;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.electribe-parameter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.electribe-parameter-grid label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: #9aa69d;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.electribe-parameter-grid label span {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.electribe-parameter-grid strong {
+  color: #d7ff4f;
+  font-size: 0.66rem;
+}
+
+.electribe-parameter-grid input {
+  padding: 0;
 }
 
 .midi-map-panel p {

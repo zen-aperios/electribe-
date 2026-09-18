@@ -15,7 +15,7 @@ import {
 } from "../engine/PatternMutator";
 import { createSeededRandom } from "../engine/random";
 import { getScalePitches } from "../engine/MelodyGenerator";
-import { patternToMidiEvents } from "../midi/MidiMapper";
+import { patternToMidiControlEvents, patternToMidiEvents } from "../midi/MidiMapper";
 import {
   exportPatternToMidiBytes,
   importPatternFromMidiBytes,
@@ -172,6 +172,30 @@ describe("GHOST engine", () => {
     expect(events.find((event) => event.pitch === 36)?.channel).toBe(10);
   });
 
+  it("maps Electribe parameters to MIDI CC events", () => {
+    const pattern = createDefaultPattern();
+    const mapped = {
+      ...pattern,
+      tracks: pattern.tracks.map((track, index) =>
+        index === 0
+          ? {
+              ...track,
+              midiChannel: 9,
+              electribeParameters: {
+                ...track.electribeParameters,
+                cutoff: 74,
+                resonance: 22,
+              },
+            }
+          : track,
+      ),
+    };
+    const controls = patternToMidiControlEvents(mapped);
+
+    expect(controls).toContainEqual({ channel: 9, controller: 74, value: 74 });
+    expect(controls).toContainEqual({ channel: 9, controller: 71, value: 22 });
+  });
+
   it("filters audible tracks using mute and solo state", () => {
     const pattern = createDefaultPattern();
     const muted = {
@@ -267,6 +291,7 @@ describe("GHOST engine", () => {
           muted: false,
           solo: false,
           volume: 1,
+          electribeParameters: pattern.tracks[7].electribeParameters,
           notes: [
             createNote({
               step: 5,

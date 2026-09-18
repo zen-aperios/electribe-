@@ -33,6 +33,7 @@ import {
 import {
   deletePatternNote,
   togglePatternNote,
+  updateTrackElectribeParameter as updatePatternTrackElectribeParameter,
   updatePatternMetadata,
   updatePatternNote,
   updateTrackMapping as updatePatternTrackMapping,
@@ -44,6 +45,7 @@ import {
   activateLibraryPatternState,
   refreshActiveLibraryPatternState,
 } from "./storeStateActions";
+import type { ElectribeParameterId } from "../midi/ElectribeParameters";
 
 interface GhostState {
   library: PatternLibrary;
@@ -64,6 +66,7 @@ interface GhostState {
   updatePattern(update: Partial<Pattern>): void;
   updateTrackMapping(trackId: string, update: Pick<Partial<Track>, "name" | "midiChannel">): void;
   updateTrackPerformance(trackId: string, update: Pick<Partial<Track>, "muted" | "solo" | "volume">): void;
+  updateTrackElectribeParameter(trackId: string, parameterId: ElectribeParameterId, value: number): void;
   toggleNote(trackId: string, step: number): void;
   selectNote(trackId: string, noteId: string): void;
   updateSelectedNote(update: Partial<Note>): void;
@@ -149,6 +152,17 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   updateTrackPerformance(trackId, update) {
     set((state) => ({
       activePattern: updatePatternTrackPerformance(state.activePattern, trackId, update),
+    }));
+  },
+
+  updateTrackElectribeParameter(trackId, parameterId, value) {
+    set((state) => ({
+      activePattern: updatePatternTrackElectribeParameter(
+        state.activePattern,
+        trackId,
+        parameterId,
+        value,
+      ),
     }));
   },
 

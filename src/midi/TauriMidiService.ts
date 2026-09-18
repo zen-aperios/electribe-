@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Pattern } from "../engine/Pattern";
-import { patternToAudibleMidiEvents } from "./MidiMapper";
+import { patternToAudibleMidiEvents, patternToMidiControlEvents } from "./MidiMapper";
 import type { MidiPortSummary, MidiService } from "./MidiService";
 
 const NOT_READY_MESSAGE = "Native Tauri MIDI is not wired yet.";
@@ -49,6 +49,9 @@ export class TauriMidiService implements MidiService {
 
   sendPattern(pattern: Pattern): void {
     const stepDurationMs = (60_000 / pattern.bpm) / 4;
+    patternToMidiControlEvents(pattern).forEach((event) => {
+      this.sendCC(event.channel, event.controller, event.value);
+    });
     patternToAudibleMidiEvents(pattern).forEach((event) => {
       window.setTimeout(() => {
         this.sendNote(

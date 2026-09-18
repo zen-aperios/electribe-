@@ -1,4 +1,8 @@
 import { audibleTracks, type Note, type Pattern, type Track } from "../engine/Pattern";
+import {
+  electribeParametersToMidiControlEvents,
+  type MidiControlEvent,
+} from "./ElectribeParameters";
 
 export interface MidiNoteEvent {
   channel: number;
@@ -21,6 +25,12 @@ export function patternToMidiEvents(pattern: Pattern): MidiNoteEvent[] {
 export function patternToAudibleMidiEvents(pattern: Pattern): MidiNoteEvent[] {
   return audibleTracks(pattern).flatMap((track) =>
     track.notes.map((note) => noteToMidiEvent(track, note)),
+  );
+}
+
+export function patternToMidiControlEvents(pattern: Pattern): MidiControlEvent[] {
+  return pattern.tracks.flatMap((track) =>
+    electribeParametersToMidiControlEvents(track.midiChannel, track.electribeParameters),
   );
 }
 

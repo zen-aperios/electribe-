@@ -1,3 +1,5 @@
+import type { ElectribeParameterId } from "../midi/ElectribeParameters";
+import { normalizeElectribeParameters } from "../midi/ElectribeParameters";
 import { resizePatternLength, type Note, type Pattern, type Track } from "../engine/Pattern";
 
 export interface SelectedNoteRef {
@@ -68,6 +70,29 @@ export function updateTrackPerformance(
             solo: update.solo ?? track.solo ?? false,
             volume:
               update.volume === undefined ? track.volume ?? 1 : clamp(update.volume, 0, 1),
+          }
+        : track,
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function updateTrackElectribeParameter(
+  pattern: Pattern,
+  trackId: string,
+  parameterId: ElectribeParameterId,
+  value: number,
+): Pattern {
+  return {
+    ...pattern,
+    tracks: pattern.tracks.map((track) =>
+      track.id === trackId
+        ? {
+            ...track,
+            electribeParameters: normalizeElectribeParameters({
+              ...track.electribeParameters,
+              [parameterId]: value,
+            }),
           }
         : track,
     ),

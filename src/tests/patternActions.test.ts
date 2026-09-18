@@ -5,6 +5,7 @@ import {
   togglePatternNote,
   updatePatternMetadata,
   updatePatternNote,
+  updateTrackElectribeParameter,
   updateTrackMapping,
   updateTrackPerformance,
 } from "../app/patternActions";
@@ -40,6 +41,19 @@ describe("pattern action helpers", () => {
 
     expect(updated.tracks[0].muted).toBe(true);
     expect(updated.tracks[0].volume).toBe(0);
+  });
+
+  it("updates Electribe track parameters with MIDI value clamping", () => {
+    const pattern = createDefaultPattern();
+    const updated = updateTrackElectribeParameter(
+      pattern,
+      pattern.tracks[0].id,
+      "cutoff",
+      200,
+    );
+
+    expect(updated.tracks[0].electribeParameters.cutoff).toBe(127);
+    expect(updated.tracks[0].electribeParameters.resonance).toBe(0);
   });
 
   it("creates, edits, and deletes notes", () => {

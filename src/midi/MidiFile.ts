@@ -2,11 +2,13 @@ import { parseMidi, writeMidi, type MidiData, type MidiEvent } from "midi-file";
 import {
   createNote,
   createPatternFromTracks,
+  normalizeTrackPerformance,
   type InstrumentType,
   type Note,
   type Pattern,
   type Track,
 } from "../engine/Pattern";
+import { normalizeElectribeParameters } from "./ElectribeParameters";
 import { patternToMidiEvents } from "./MidiMapper";
 
 const TICKS_PER_BEAT = 480;
@@ -206,6 +208,7 @@ export function importPatternFromMidiBytes(
         muted: false,
         solo: false,
         volume: 1,
+        electribeParameters: normalizeElectribeParameters(),
         notes,
       });
     }
@@ -270,6 +273,7 @@ function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
       muted: false,
       solo: false,
       volume: 1,
+      electribeParameters: normalizeElectribeParameters(),
       notes: [],
     };
 
@@ -291,12 +295,13 @@ function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
       muted: false,
       solo: false,
       volume: 1,
+      electribeParameters: normalizeElectribeParameters(),
       notes: [],
     });
   }
 
   return padded.map((track) => ({
-    ...track,
+    ...normalizeTrackPerformance(track),
     instrumentType: TRACK_TYPES[padded.indexOf(track)] ?? "other",
     notes: dedupeImportedNotes(
       track.notes
