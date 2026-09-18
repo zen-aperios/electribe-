@@ -10,6 +10,8 @@ CURRENT PATTERN -> GHOST -> MANY POSSIBILITIES
 
 Phase 1 focuses on a clean React/TypeScript prototype with a pure algorithmic engine, Web Audio preview, variation cards, JSON save/load, and testable MIDI/pattern conversion boundaries. There is no cloud backend and no external AI API.
 
+The app includes generic MIDI channel mapping today. Electribe-specific part, CC, NRPN, and SysEx behavior is intentionally deferred until it can be verified against hardware.
+
 ## Run
 
 ```bash
