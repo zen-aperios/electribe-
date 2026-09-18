@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import {
-  clonePattern,
   createDefaultPattern,
   DEFAULT_PRESERVATION,
   type GenerationParameters,
@@ -12,6 +11,16 @@ import {
 } from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
+import {
+  createLibraryPattern,
+  deleteLibraryPattern,
+  duplicateLibraryPattern,
+  importPatternToLibrary,
+  isPatternDirty,
+  renameLibraryPattern,
+  savePatternToLibrary,
+  setActiveLibraryPattern,
+} from "./libraryActions";
 import {
   deletePatternNote,
   togglePatternNote,
@@ -84,10 +93,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   isDirty() {
     const state = get();
-    const saved = state.library.patterns.find(
-      (pattern) => pattern.id === state.activePattern.id,
-    );
-    return !saved || stablePatternString(saved) !== stablePatternString(state.activePattern);
+    return isPatternDirty(state.library, state.activePattern);
   },
 
   setPlaying(isPlaying) {
@@ -247,11 +253,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   saveActivePattern() {
     const state = get();
-    const patterns = [
-      state.activePattern,
-      ...state.library.patterns.filter((pattern) => pattern.id !== state.activePattern.id),
-    ];
-    const library = { activePatternId: state.activePattern.id, patterns };
+    const library = savePatternToLibrary(state.library, state.activePattern);
     saveLibrary(library);
     set({ library });
   },
@@ -263,17 +265,16 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   setActivePattern(id) {
-    const pattern = get().library.patterns.find((candidate) => candidate.id === id);
-    if (!pattern) {
+    const result = setActiveLibraryPattern(get().library, id);
+    if (!result) {
       return;
     }
 
-    const library = { ...get().library, activePatternId: pattern.id };
-    saveLibrary(library);
+    saveLibrary(result.library);
     set({
-      library,
-      activePattern: pattern,
-      sourcePattern: pattern,
+      library: result.library,
+      activePattern: result.activePattern,
+      sourcePattern: result.activePattern,
       variations: [],
       selectedVariationId: null,
       selectedNote: null,
@@ -282,17 +283,12 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   createPattern() {
-    const currentCount = get().library.patterns.length + 1;
-    const activePattern = createDefaultPattern(`Ghost Pattern ${String(currentCount).padStart(2, "0")}`);
-    const library = {
-      activePatternId: activePattern.id,
-      patterns: [activePattern, ...get().library.patterns],
-    };
-    saveLibrary(library);
+    const result = createLibraryPattern(get().library);
+    saveLibrary(result.library);
     set({
-      library,
-      activePattern,
-      sourcePattern: activePattern,
+      library: result.library,
+      activePattern: result.activePattern,
+      sourcePattern: result.activePattern,
       variations: [],
       selectedVariationId: null,
       selectedNote: null,
@@ -301,16 +297,12 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   duplicateActivePattern() {
-    const duplicate = clonePattern(get().activePattern, `${get().activePattern.name} Copy`);
-    const library = {
-      activePatternId: duplicate.id,
-      patterns: [duplicate, ...get().library.patterns],
-    };
-    saveLibrary(library);
+    const result = duplicateLibraryPattern(get().library, get().activePattern);
+    saveLibrary(result.library);
     set({
-      library,
-      activePattern: duplicate,
-      sourcePattern: duplicate,
+      library: result.library,
+      activePattern: result.activePattern,
+      sourcePattern: result.activePattern,
       variations: [],
       selectedVariationId: null,
       selectedNote: null,
@@ -319,36 +311,27 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   renameActivePattern(name) {
-    const trimmed = name.trim();
-    if (!trimmed) {
+    const result = renameLibraryPattern(get().library, get().activePattern, name);
+    if (!result) {
       return;
     }
 
-    const activePattern = {
-      ...get().activePattern,
-      name: trimmed,
-      updatedAt: new Date().toISOString(),
-    };
-    const library = upsertPattern(get().library, activePattern);
-    saveLibrary(library);
-    set({ library, activePattern, sourcePattern: activePattern, selectedNote: null });
+    saveLibrary(result.library);
+    set({
+      library: result.library,
+      activePattern: result.activePattern,
+      sourcePattern: result.activePattern,
+      selectedNote: null,
+    });
   },
 
   deleteActivePattern() {
-    const state = get();
-    const remaining = state.library.patterns.filter(
-      (pattern) => pattern.id !== state.activePattern.id,
-    );
-    const activePattern = remaining[0] ?? createDefaultPattern("Ghost Pattern 01");
-    const library = {
-      activePatternId: activePattern.id,
-      patterns: remaining.length ? remaining : [activePattern],
-    };
-    saveLibrary(library);
+    const result = deleteLibraryPattern(get().library, get().activePattern);
+    saveLibrary(result.library);
     set({
-      library,
-      activePattern,
-      sourcePattern: activePattern,
+      library: result.library,
+      activePattern: result.activePattern,
+      sourcePattern: result.activePattern,
       variations: [],
       selectedVariationId: null,
       selectedNote: null,
@@ -357,15 +340,12 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   },
 
   importPattern(pattern) {
-    const library = {
-      activePatternId: pattern.id,
-      patterns: [pattern, ...get().library.patterns.filter((candidate) => candidate.id !== pattern.id)],
-    };
-    saveLibrary(library);
+    const result = importPatternToLibrary(get().library, pattern);
+    saveLibrary(result.library);
     set({
-      library,
-      activePattern: pattern,
-      sourcePattern: pattern,
+      library: result.library,
+      activePattern: result.activePattern,
+      sourcePattern: result.activePattern,
       variations: [],
       selectedVariationId: null,
       selectedNote: null,
@@ -383,24 +363,6 @@ function safeLoadLibrary(): PatternLibrary {
   return loadLibrary();
 }
 
-function upsertPattern(library: PatternLibrary, pattern: Pattern): PatternLibrary {
-  return {
-    activePatternId: pattern.id,
-    patterns: [
-      pattern,
-      ...library.patterns.filter((candidate) => candidate.id !== pattern.id),
-    ],
-  };
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
-}
-
-function stablePatternString(pattern: Pattern): string {
-  return JSON.stringify({
-    ...pattern,
-    updatedAt: undefined,
-    createdAt: undefined,
-  });
 }
