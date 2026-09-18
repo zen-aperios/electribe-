@@ -16,6 +16,8 @@ Patterns support arbitrary step lengths from 1 to 64 steps. Resizing a pattern r
 
 Each track has performance controls for mute, solo, and volume. Audio preview and live Web MIDI output respect those controls; MIDI file export keeps the full pattern data.
 
+MIDI import supports quantization at 1/8, 1/16, or 1/32 and can either auto-detect pattern length or force 8, 16, 32, or 64 steps.
+
 ## Run
 
 ```bash
