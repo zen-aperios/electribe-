@@ -9,6 +9,7 @@ GHOST should remain a step-pattern tool first. The desktop and MIDI layers must 
 The long-term Electribe path should use as much of the hardware as we can safely verify:
 
 - 16-part style pattern workflows
+- Clear display of which GHOST track maps to which Electribe part or instrument role
 - Per-part MIDI channels and note mappings
 - Step length, note duration, velocity, and gate behavior
 - Muting, soloing, and performance-level volume changes
@@ -18,6 +19,19 @@ The long-term Electribe path should use as much of the hardware as we can safely
 - Pattern import/export flows that keep hardware structure intact
 
 Generic MIDI support is only the foundation. Korg-specific mappings should be added behind the existing MIDI service and mapper boundaries once they are tested against the device.
+
+## Mirror Mode Goal
+
+GHOST should eventually offer a hardware mirror mode for the connected Electribe. In that mode, the app should show hardware-facing state rather than only the local GHOST pattern:
+
+- Connected device name and selected MIDI output/input
+- Active mapped part or instrument track
+- Current play step when MIDI clock or transport data is available
+- Muted or active parts when the hardware exposes that state
+- Pattern length, tempo, and swing alignment
+- Incoming notes or controller changes that can be observed over MIDI
+
+Mirror mode depends on real MIDI input and verified Electribe behavior. If the Electribe does not expose a state over MIDI or SysEx, GHOST should label that state as local/unverified instead of pretending it is mirrored.
 
 Current generic MIDI support:
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { detectMidiRuntime, createMidiService } from "../midi/MidiRuntime";
 import { TauriMidiService } from "../midi/TauriMidiService";
 import { WebMidiService } from "../midi/MidiService";
+import { createDefaultPattern } from "../engine/Pattern";
 
 const { invoke } = vi.hoisted(() => ({
   invoke: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 beforeEach(() => {
   invoke.mockReset();
+  vi.useRealTimers();
 });
 
 describe("MIDI runtime", () => {
@@ -43,9 +45,67 @@ describe("MIDI runtime", () => {
     expect(invoke).toHaveBeenCalledWith("list_midi_outputs");
   });
 
-  it("fails loudly for native MIDI sends until they are wired", () => {
-    expect(() => new TauriMidiService().sendClock()).toThrow(
-      "Native Tauri MIDI is not wired yet.",
+  it("connects and disconnects through the Tauri command bridge", async () => {
+    const service = new TauriMidiService();
+
+    await service.connect("2");
+    service.disconnect();
+
+    expect(invoke).toHaveBeenCalledWith("connect_midi_output", { outputId: "2" });
+    expect(invoke).toHaveBeenCalledWith("disconnect_midi_output");
+  });
+
+  it("sends native MIDI note on and note off messages", () => {
+    vi.useFakeTimers();
+
+    new TauriMidiService().sendNote(1, 64, 100, 250);
+
+    expect(invoke).toHaveBeenCalledWith("send_midi_note", {
+      channel: 1,
+      pitch: 64,
+      velocity: 100,
+    });
+    expect(invoke).not.toHaveBeenCalledWith("send_midi_note_off", {
+      channel: 1,
+      pitch: 64,
+    });
+
+    vi.advanceTimersByTime(250);
+
+    expect(invoke).toHaveBeenCalledWith("send_midi_note_off", {
+      channel: 1,
+      pitch: 64,
+    });
+  });
+
+  it("sends native MIDI CC and clock messages", () => {
+    const service = new TauriMidiService();
+
+    service.sendCC(10, 74, 90);
+    service.sendClock();
+
+    expect(invoke).toHaveBeenCalledWith("send_midi_cc", {
+      channel: 10,
+      controller: 74,
+      value: 90,
+    });
+    expect(invoke).toHaveBeenCalledWith("send_midi_clock");
+  });
+
+  it("schedules step-pattern events through native MIDI", () => {
+    vi.useFakeTimers();
+    const pattern = createDefaultPattern();
+
+    new TauriMidiService().sendPattern(pattern);
+
+    vi.advanceTimersByTime(0);
+
+    expect(invoke).toHaveBeenCalledWith(
+      "send_midi_note",
+      expect.objectContaining({
+        channel: pattern.tracks[0].midiChannel,
+        pitch: pattern.tracks[0].notes[0].pitch,
+      }),
     );
   });
 });
