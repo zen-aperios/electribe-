@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import { createDefaultPattern, type Pattern, type PatternVariation } from "../engine/Pattern";
+import {
+  clonePattern,
+  createDefaultPattern,
+  type Pattern,
+  type PatternVariation,
+} from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
 
@@ -24,6 +29,12 @@ interface GhostState {
   setCompareMode(mode: "A" | "B"): void;
   saveActivePattern(): void;
   loadFromStorage(): void;
+  setActivePattern(id: string): void;
+  createPattern(): void;
+  duplicateActivePattern(): void;
+  renameActivePattern(name: string): void;
+  deleteActivePattern(): void;
+  importPattern(pattern: Pattern): void;
 }
 
 const initialLibrary = safeLoadLibrary();
@@ -177,6 +188,112 @@ export const useGhostStore = create<GhostState>((set, get) => ({
     const activePattern = library.patterns.find((pattern) => pattern.id === library.activePatternId) ?? library.patterns[0];
     set({ library, activePattern, sourcePattern: activePattern });
   },
+
+  setActivePattern(id) {
+    const pattern = get().library.patterns.find((candidate) => candidate.id === id);
+    if (!pattern) {
+      return;
+    }
+
+    const library = { ...get().library, activePatternId: pattern.id };
+    saveLibrary(library);
+    set({
+      library,
+      activePattern: pattern,
+      sourcePattern: pattern,
+      variations: [],
+      selectedVariationId: null,
+      compareMode: "A",
+    });
+  },
+
+  createPattern() {
+    const currentCount = get().library.patterns.length + 1;
+    const activePattern = createDefaultPattern(`Ghost Pattern ${String(currentCount).padStart(2, "0")}`);
+    const library = {
+      activePatternId: activePattern.id,
+      patterns: [activePattern, ...get().library.patterns],
+    };
+    saveLibrary(library);
+    set({
+      library,
+      activePattern,
+      sourcePattern: activePattern,
+      variations: [],
+      selectedVariationId: null,
+      compareMode: "A",
+    });
+  },
+
+  duplicateActivePattern() {
+    const duplicate = clonePattern(get().activePattern, `${get().activePattern.name} Copy`);
+    const library = {
+      activePatternId: duplicate.id,
+      patterns: [duplicate, ...get().library.patterns],
+    };
+    saveLibrary(library);
+    set({
+      library,
+      activePattern: duplicate,
+      sourcePattern: duplicate,
+      variations: [],
+      selectedVariationId: null,
+      compareMode: "A",
+    });
+  },
+
+  renameActivePattern(name) {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const activePattern = {
+      ...get().activePattern,
+      name: trimmed,
+      updatedAt: new Date().toISOString(),
+    };
+    const library = upsertPattern(get().library, activePattern);
+    saveLibrary(library);
+    set({ library, activePattern, sourcePattern: activePattern });
+  },
+
+  deleteActivePattern() {
+    const state = get();
+    const remaining = state.library.patterns.filter(
+      (pattern) => pattern.id !== state.activePattern.id,
+    );
+    const activePattern = remaining[0] ?? createDefaultPattern("Ghost Pattern 01");
+    const library = {
+      activePatternId: activePattern.id,
+      patterns: remaining.length ? remaining : [activePattern],
+    };
+    saveLibrary(library);
+    set({
+      library,
+      activePattern,
+      sourcePattern: activePattern,
+      variations: [],
+      selectedVariationId: null,
+      compareMode: "A",
+    });
+  },
+
+  importPattern(pattern) {
+    const library = {
+      activePatternId: pattern.id,
+      patterns: [pattern, ...get().library.patterns.filter((candidate) => candidate.id !== pattern.id)],
+    };
+    saveLibrary(library);
+    set({
+      library,
+      activePattern: pattern,
+      sourcePattern: pattern,
+      variations: [],
+      selectedVariationId: null,
+      compareMode: "A",
+    });
+  },
 }));
 
 function safeLoadLibrary(): PatternLibrary {
@@ -186,4 +303,14 @@ function safeLoadLibrary(): PatternLibrary {
   }
 
   return loadLibrary();
+}
+
+function upsertPattern(library: PatternLibrary, pattern: Pattern): PatternLibrary {
+  return {
+    activePatternId: pattern.id,
+    patterns: [
+      pattern,
+      ...library.patterns.filter((candidate) => candidate.id !== pattern.id),
+    ],
+  };
 }

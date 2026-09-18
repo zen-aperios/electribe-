@@ -88,7 +88,7 @@ export function createNote(note: Omit<Note, "id"> & { id?: string }): Note {
   };
 }
 
-export function createDefaultPattern(): Pattern {
+export function createDefaultPattern(name = "Ghost Pattern 01"): Pattern {
   const createdAt = now();
   const length = 16;
   const tracks: Track[] = [
@@ -104,7 +104,7 @@ export function createDefaultPattern(): Pattern {
 
   return {
     id: cryptoId("pattern"),
-    name: "Ghost Pattern 01",
+    name,
     bpm: 124,
     swing: 8,
     length,
@@ -130,6 +130,23 @@ export function clonePattern(pattern: Pattern, name = pattern.name): Pattern {
       notes: track.notes.map((note) => ({ ...note, id: cryptoId("note") })),
     })),
     updatedAt: clonedAt,
+  };
+}
+
+export function createPatternFromTracks(
+  pattern: Omit<Pattern, "id" | "createdAt" | "updatedAt">,
+): Pattern {
+  const createdAt = now();
+  return {
+    ...pattern,
+    id: cryptoId("pattern"),
+    tracks: pattern.tracks.map((track) => ({
+      ...track,
+      id: track.id || cryptoId(track.instrumentType),
+      notes: track.notes.map((note) => createNote(note)),
+    })),
+    createdAt,
+    updatedAt: createdAt,
   };
 }
 

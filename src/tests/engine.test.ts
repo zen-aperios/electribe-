@@ -5,6 +5,10 @@ import { mutateDensity } from "../engine/PatternMutator";
 import { createSeededRandom } from "../engine/random";
 import { getScalePitches } from "../engine/MelodyGenerator";
 import { patternToMidiEvents } from "../midi/MidiMapper";
+import {
+  exportPatternToMidiBytes,
+  importPatternFromMidiBytes,
+} from "../midi/MidiFile";
 import { exportPatternJson, importPatternJson } from "../storage/PatternStorage";
 
 describe("GHOST engine", () => {
@@ -76,6 +80,18 @@ describe("GHOST engine", () => {
 
     expect(events.length).toBeGreaterThan(0);
     expect(events.every((event) => event.channel >= 1 && event.channel <= 16)).toBe(true);
+  });
+
+  it("exports and imports MIDI bytes", () => {
+    const pattern = createDefaultPattern();
+    const bytes = exportPatternToMidiBytes(pattern);
+    const imported = importPatternFromMidiBytes(bytes, "Round Trip");
+
+    expect(bytes.length).toBeGreaterThan(20);
+    expect(imported.name).toBe("Round Trip");
+    expect(imported.bpm).toBe(pattern.bpm);
+    expect(imported.tracks.some((track) => track.notes.length > 0)).toBe(true);
+    expect(imported.tracks[0].notes[0].step).toBe(pattern.tracks[0].notes[0].step);
   });
 
   it("round trips JSON save/load", () => {

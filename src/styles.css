@@ -229,11 +229,46 @@ h1 {
 }
 
 .ab-panel,
+.library-panel,
 .midi-panel {
   border: 1px solid #252d29;
   border-radius: 8px;
   background: rgba(9, 12, 10, 0.82);
   padding: 12px;
+}
+
+.library-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.library-panel h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.library-panel select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #313936;
+  border-radius: 6px;
+  background: #0e1210;
+  color: #f1f4ed;
+  padding: 0 10px;
+}
+
+.library-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.library-actions button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 32px;
+  padding: 0 6px;
+  font-size: 0.74rem;
 }
 
 .segmented {
@@ -269,6 +304,26 @@ h1 {
   gap: 7px;
   margin: 0;
   font-size: 0.95rem;
+}
+
+.file-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.file-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 0.78rem;
+}
+
+.hidden-file {
+  display: none;
 }
 
 .variation-grid {
