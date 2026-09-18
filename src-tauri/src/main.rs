@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  ghost_electribe_lib::run();
+    ghost_electribe_lib::run();
 }
