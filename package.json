@@ -5,6 +5,26 @@
   "type": "module",
   "license": "MIT",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/zen-aperios/electribe-.git"
+  },
+  "homepage": "https://github.com/zen-aperios/electribe-#readme",
+  "bugs": {
+    "url": "https://github.com/zen-aperios/electribe-/issues"
+  },
+  "keywords": [
+    "korg",
+    "electribe",
+    "midi",
+    "web-midi",
+    "generative-music",
+    "pattern-generator",
+    "music-tools",
+    "react",
+    "typescript",
+    "vite"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

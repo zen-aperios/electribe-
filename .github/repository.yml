@@ -1,0 +1,15 @@
+repository:
+  name: electribe-
+  description: "GHOST is a local-first generative pattern tool for Korg Electribe 2 and MIDI hardware."
+  homepage: "https://github.com/zen-aperios/electribe-#readme"
+  topics:
+    - korg
+    - electribe
+    - midi
+    - web-midi
+    - generative-music
+    - pattern-generator
+    - music-tools
+    - react
+    - typescript
+    - vite
