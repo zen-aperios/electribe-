@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { AudioEngine } from "../audio/AudioEngine";
 import { Sequencer } from "../audio/Sequencer";
 import { GhostButton } from "../components/GhostButton";
+import { MidiMappingPanel } from "../components/MidiMappingPanel";
 import { MidiPanel } from "../components/MidiPanel";
 import { NoteEditorPanel } from "../components/NoteEditorPanel";
 import { ParameterControls } from "../components/ParameterControls";
@@ -134,6 +135,7 @@ export function App() {
         <aside className="right-rail">
           <PatternLibraryPanel />
           <NoteEditorPanel />
+          <MidiMappingPanel />
           <div className="ab-panel">
             <div className="segmented">
               <button className={compareMode === "A" ? "active" : ""} onClick={() => setCompareMode("A")}>

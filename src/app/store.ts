@@ -8,6 +8,7 @@ import {
   type Pattern,
   type PatternVariation,
   type PreservationSettings,
+  type Track,
 } from "../engine/Pattern";
 import { generateVariations } from "../engine/PatternGenerator";
 import { loadLibrary, saveLibrary, type PatternLibrary } from "../storage/PatternStorage";
@@ -28,6 +29,7 @@ interface GhostState {
   setMutationStrength(mutationStrength: number): void;
   setPreservation(key: keyof PreservationSettings, value: number): void;
   updatePattern(update: Partial<Pattern>): void;
+  updateTrackMapping(trackId: string, update: Pick<Partial<Track>, "name" | "midiChannel">): void;
   toggleNote(trackId: string, step: number): void;
   selectNote(trackId: string, noteId: string): void;
   updateSelectedNote(update: Partial<Note>): void;
@@ -103,6 +105,28 @@ export const useGhostStore = create<GhostState>((set, get) => ({
       activePattern: {
         ...state.activePattern,
         ...update,
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  },
+
+  updateTrackMapping(trackId, update) {
+    set((state) => ({
+      activePattern: {
+        ...state.activePattern,
+        tracks: state.activePattern.tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                ...update,
+                name: update.name ?? track.name,
+                midiChannel:
+                  update.midiChannel === undefined
+                    ? track.midiChannel
+                    : Math.round(clamp(update.midiChannel, 1, 16)),
+              }
+            : track,
+        ),
         updatedAt: new Date().toISOString(),
       },
     }));

@@ -117,6 +117,19 @@ describe("GHOST engine", () => {
     expect(events.every((event) => event.channel >= 1 && event.channel <= 16)).toBe(true);
   });
 
+  it("uses editable track MIDI channels for MIDI events", () => {
+    const pattern = createDefaultPattern();
+    const remapped = {
+      ...pattern,
+      tracks: pattern.tracks.map((track, index) =>
+        index === 0 ? { ...track, midiChannel: 10 } : track,
+      ),
+    };
+    const events = patternToMidiEvents(remapped);
+
+    expect(events.find((event) => event.pitch === 36)?.channel).toBe(10);
+  });
+
   it("exports and imports MIDI bytes", () => {
     const pattern = createDefaultPattern();
     const bytes = exportPatternToMidiBytes(pattern);
