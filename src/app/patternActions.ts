@@ -33,7 +33,7 @@ export function updatePatternMetadata(
 export function updateTrackMapping(
   pattern: Pattern,
   trackId: string,
-  update: Pick<Partial<Track>, "name" | "midiChannel">,
+  update: Pick<Partial<Track>, "name" | "instrumentName" | "midiChannel">,
 ): Pattern {
   return {
     ...pattern,
@@ -43,6 +43,7 @@ export function updateTrackMapping(
             ...track,
             ...update,
             name: update.name ?? track.name,
+            instrumentName: update.instrumentName ?? track.instrumentName,
             midiChannel:
               update.midiChannel === undefined
                 ? track.midiChannel
@@ -50,6 +51,35 @@ export function updateTrackMapping(
           }
         : track,
     ),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function reorderPatternTracks(
+  pattern: Pattern,
+  fromIndex: number,
+  toIndex: number,
+): Pattern {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= pattern.tracks.length ||
+    toIndex >= pattern.tracks.length
+  ) {
+    return pattern;
+  }
+
+  const tracks = [...pattern.tracks];
+  const [moved] = tracks.splice(fromIndex, 1);
+  tracks.splice(toIndex, 0, moved);
+
+  return {
+    ...pattern,
+    tracks: tracks.map((track, index) => ({
+      ...track,
+      midiChannel: index + 1,
+    })),
     updatedAt: new Date().toISOString(),
   };
 }

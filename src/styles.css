@@ -173,7 +173,7 @@ h1 {
 .arrangement-panel {
   position: relative;
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: 118px minmax(0, 1fr);
   gap: 8px;
   height: clamp(190px, 26vh, 300px);
   overflow: hidden;
@@ -231,12 +231,28 @@ h1 {
   margin-bottom: 7px;
 }
 
+.track-row.hardware-selected .track-label {
+  border-left: 2px solid #d7ff4f;
+  padding-left: 6px;
+}
+
+.track-row.hardware-selected .track-label strong,
+.mapping-row.hardware-selected .part-pill {
+  color: #d7ff4f;
+}
+
 .track-label {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-columns: 58px minmax(0, 1fr);
   gap: 6px;
-  min-height: 34px;
+  min-height: 38px;
   align-items: center;
+}
+
+.track-title {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
 }
 
 .track-label strong {
@@ -247,9 +263,18 @@ h1 {
   font-size: 0.82rem;
 }
 
-.track-label span {
+.track-label span,
+.track-instrument {
   color: #7f8c83;
   font-size: 0.68rem;
+}
+
+.track-instrument {
+  grid-column: 2;
+  grid-row: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .track-row.muted .step.on {
@@ -261,6 +286,8 @@ h1 {
 }
 
 .track-performance {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   display: grid;
   grid-template-columns: 24px 24px minmax(42px, 1fr);
   gap: 4px;
@@ -470,8 +497,8 @@ h1 {
 .mapping-header,
 .mapping-row-main {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 72px 54px;
-  gap: 8px;
+  grid-template-columns: 22px 38px minmax(0, 1fr) 54px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -493,6 +520,19 @@ h1 {
   padding-top: 10px;
 }
 
+.mapping-row.dragging {
+  opacity: 0.55;
+}
+
+.mapping-row.hardware-selected {
+  border-color: #d7ff4f;
+}
+
+.mapping-row.hardware-selected .mapping-row-main {
+  border-left: 2px solid #d7ff4f;
+  padding-left: 6px;
+}
+
 .mapping-row:first-child {
   border-top: 0;
   padding-top: 0;
@@ -509,7 +549,14 @@ h1 {
   padding: 0 8px;
 }
 
+.mapping-instrument-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 .part-pill,
+.drag-handle,
 .role-pill {
   display: inline-grid;
   place-items: center;
@@ -519,6 +566,24 @@ h1 {
   color: #cbd5cc;
   font-size: 0.68rem;
   text-transform: uppercase;
+}
+
+.role-pill {
+  justify-content: start;
+  min-height: 18px;
+  border: 0;
+  color: #7f8c83;
+  padding: 0;
+}
+
+.drag-handle {
+  cursor: grab;
+  padding: 0;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .electribe-parameter-grid {

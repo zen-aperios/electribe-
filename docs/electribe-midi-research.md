@@ -10,6 +10,7 @@ The long-term Electribe path should use as much of the hardware as we can safely
 
 - 16-part style pattern workflows
 - Clear display of which GHOST track maps to which Electribe part or instrument role
+- Editable instrument names for the target sound assigned to each part
 - Per-part MIDI channels and note mappings
 - Step length, note duration, velocity, and gate behavior
 - Muting, soloing, and performance-level volume changes
@@ -26,6 +27,7 @@ GHOST should eventually offer a hardware mirror mode for the connected Electribe
 
 - Connected device name and selected MIDI output/input
 - Active mapped part or instrument track
+- Incoming channel activity highlights the matching mapped part in the interface
 - Current play step when MIDI clock or transport data is available
 - Muted or active parts when the hardware exposes that state
 - Pattern length, tempo, and swing alignment
@@ -36,13 +38,16 @@ Mirror mode depends on real MIDI input and verified Electribe behavior. If the E
 Current generic MIDI support:
 
 - Each GHOST track has an editable MIDI channel in the Mapping panel.
+- Each GHOST track has an editable Electribe instrument label for the target part sound.
+- MIDI input mirror mode highlights the mapped part when channel voice data arrives.
 - MIDI file export uses the track channel values.
 - Web MIDI output sends note events using the same track channel values.
-- Track names and channels are saved in the pattern JSON.
+- Track names, instrument labels, and channels are saved in the pattern JSON.
 
 Before adding `sendToElectribe()`, verify against hardware:
 
 - MIDI channel defaults for each part
+- SysEx pattern fields that reveal oscillator/instrument assignment names or IDs
 - Note mapping for drum and synth parts
 - CC and NRPN mappings for parameters
 - Pattern write behavior over MIDI, if exposed

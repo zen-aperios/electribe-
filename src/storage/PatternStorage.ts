@@ -1,4 +1,9 @@
-import { createDefaultPattern, validatePattern, type Pattern } from "../engine/Pattern";
+import {
+  createDefaultPattern,
+  normalizePattern,
+  validatePattern,
+  type Pattern,
+} from "../engine/Pattern";
 
 const STORAGE_KEY = "ghost.patterns.v1";
 
@@ -16,7 +21,7 @@ export function loadLibrary(): PatternLibrary {
 
   try {
     const parsed = JSON.parse(raw) as PatternLibrary;
-    const patterns = parsed.patterns.filter(validatePattern);
+    const patterns = parsed.patterns.filter(validatePattern).map(normalizePattern);
     if (!patterns.length) {
       return fallback;
     }
@@ -43,7 +48,7 @@ export function importPatternJson(json: string): Pattern {
   if (!validatePattern(parsed)) {
     throw new Error("Invalid GHOST pattern JSON.");
   }
-  return parsed;
+  return normalizePattern(parsed);
 }
 
 function createFallbackLibrary(): PatternLibrary {

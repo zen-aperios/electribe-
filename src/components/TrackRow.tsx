@@ -6,9 +6,10 @@ interface TrackRowProps {
   track: Track;
   length: number;
   currentStep: number;
+  selected?: boolean;
 }
 
-export function TrackRow({ track, length, currentStep }: TrackRowProps) {
+export function TrackRow({ track, length, currentStep, selected = false }: TrackRowProps) {
   const toggleNote = useGhostStore((state) => state.toggleNote);
   const selectedNote = useGhostStore((state) => state.selectedNote);
   const updateTrackPerformance = useGhostStore((state) => state.updateTrackPerformance);
@@ -19,12 +20,13 @@ export function TrackRow({ track, length, currentStep }: TrackRowProps) {
   const volume = track.volume ?? 1;
 
   return (
-    <div className={`track-row ${muted ? "muted" : ""} ${solo ? "solo" : ""}`} style={{ gridTemplateColumns: `168px repeat(${length}, minmax(18px, 1fr))` }}>
+    <div className={`track-row ${muted ? "muted" : ""} ${solo ? "solo" : ""} ${selected ? "hardware-selected" : ""}`} style={{ gridTemplateColumns: `210px repeat(${length}, minmax(18px, 1fr))` }}>
       <div className="track-label">
         <div className="track-title">
           <strong>{track.name}</strong>
           <span>CH {track.midiChannel}</span>
         </div>
+        <span className="track-instrument">{track.instrumentName}</span>
         <div className="track-performance">
           <button
             className={muted ? "active" : ""}

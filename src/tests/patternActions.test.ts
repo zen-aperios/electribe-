@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDefaultPattern, validatePattern } from "../engine/Pattern";
 import {
   deletePatternNote,
+  reorderPatternTracks,
   togglePatternNote,
   updatePatternMetadata,
   updatePatternNote,
@@ -25,10 +26,12 @@ describe("pattern action helpers", () => {
     const pattern = createDefaultPattern();
     const updated = updateTrackMapping(pattern, pattern.tracks[0].id, {
       name: "Drum One",
+      instrumentName: "Electribe Kick Layer",
       midiChannel: 99,
     });
 
     expect(updated.tracks[0].name).toBe("Drum One");
+    expect(updated.tracks[0].instrumentName).toBe("Electribe Kick Layer");
     expect(updated.tracks[0].midiChannel).toBe(16);
   });
 
@@ -41,6 +44,16 @@ describe("pattern action helpers", () => {
 
     expect(updated.tracks[0].muted).toBe(true);
     expect(updated.tracks[0].volume).toBe(0);
+  });
+
+  it("reorders tracks and remaps channels to part slots", () => {
+    const pattern = createDefaultPattern();
+    const updated = reorderPatternTracks(pattern, 4, 1);
+
+    expect(updated.tracks[1].instrumentType).toBe("bass");
+    expect(updated.tracks.map((track) => track.midiChannel)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
   });
 
   it("updates Electribe track parameters with MIDI value clamping", () => {

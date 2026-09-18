@@ -15,6 +15,7 @@ export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
   const updateTrackElectribeParameter = useGhostStore(
     (state) => state.updateTrackElectribeParameter,
   );
+  const setSelectedHardwareTrack = useGhostStore((state) => state.setSelectedHardwareTrack);
   const [inputs, setInputs] = useState<MidiPortSummary[]>([]);
   const [outputs, setOutputs] = useState<MidiPortSummary[]>([]);
   const [selectedInputId, setSelectedInputId] = useState("");
@@ -78,18 +79,27 @@ export function MidiDevicePanel({ pattern, onStatus }: MidiDevicePanelProps) {
 
   const mirrorIncomingMidiMessage = (message: MidiInputMessage) => {
     const [status, controller, value] = message.data;
-    if ((status & 0xf0) !== 0xb0 || controller === undefined || value === undefined) {
-      return;
-    }
-
-    const parameterId = electribeParameterIdForCc(controller);
-    if (!parameterId) {
+    const messageType = status & 0xf0;
+    if (messageType < 0x80 || messageType > 0xe0) {
       return;
     }
 
     const channel = (status & 0x0f) + 1;
     const track = pattern.tracks.find((candidate) => candidate.midiChannel === channel);
     if (!track) {
+      return;
+    }
+
+    setSelectedHardwareTrack(track.id);
+
+    if (messageType !== 0xb0 || controller === undefined || value === undefined) {
+      onStatus(`${track.name} selected from MIDI`);
+      return;
+    }
+
+    const parameterId = electribeParameterIdForCc(controller);
+    if (!parameterId) {
+      onStatus(`${track.name} selected from MIDI`);
       return;
     }
 

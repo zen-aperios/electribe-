@@ -32,6 +32,7 @@ import {
 } from "./libraryActions";
 import {
   deletePatternNote,
+  reorderPatternTracks,
   togglePatternNote,
   updateTrackElectribeParameter as updatePatternTrackElectribeParameter,
   updatePatternMetadata,
@@ -58,13 +59,19 @@ interface GhostState {
   compareMode: "A" | "B";
   generationSettings: GenerationParameters;
   selectedNote: SelectedNoteRef | null;
+  selectedHardwareTrackId: string | null;
   isDirty(): boolean;
   setPlaying(isPlaying: boolean): void;
   setCurrentStep(step: number): void;
+  setSelectedHardwareTrack(trackId: string | null): void;
   setMutationStrength(mutationStrength: number): void;
   setPreservation(key: keyof PreservationSettings, value: number): void;
   updatePattern(update: Partial<Pattern>): void;
-  updateTrackMapping(trackId: string, update: Pick<Partial<Track>, "name" | "midiChannel">): void;
+  updateTrackMapping(
+    trackId: string,
+    update: Pick<Partial<Track>, "name" | "instrumentName" | "midiChannel">,
+  ): void;
+  reorderTracks(fromIndex: number, toIndex: number): void;
   updateTrackPerformance(trackId: string, update: Pick<Partial<Track>, "muted" | "solo" | "volume">): void;
   updateTrackElectribeParameter(trackId: string, parameterId: ElectribeParameterId, value: number): void;
   toggleNote(trackId: string, step: number): void;
@@ -99,6 +106,7 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   currentStep: 0,
   compareMode: "A",
   selectedNote: null,
+  selectedHardwareTrackId: null,
   generationSettings: {
     variationCount: 6,
     mutationStrength: 1,
@@ -116,6 +124,10 @@ export const useGhostStore = create<GhostState>((set, get) => ({
 
   setCurrentStep(step) {
     set({ currentStep: step });
+  },
+
+  setSelectedHardwareTrack(trackId) {
+    set({ selectedHardwareTrackId: trackId });
   },
 
   setMutationStrength(mutationStrength) {
@@ -146,6 +158,12 @@ export const useGhostStore = create<GhostState>((set, get) => ({
   updateTrackMapping(trackId, update) {
     set((state) => ({
       activePattern: updatePatternTrackMapping(state.activePattern, trackId, update),
+    }));
+  },
+
+  reorderTracks(fromIndex, toIndex) {
+    set((state) => ({
+      activePattern: reorderPatternTracks(state.activePattern, fromIndex, toIndex),
     }));
   },
 

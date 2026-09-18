@@ -2,6 +2,7 @@ import { parseMidi, writeMidi, type MidiData, type MidiEvent } from "midi-file";
 import {
   createNote,
   createPatternFromTracks,
+  defaultElectribeInstrumentName,
   normalizeTrackPerformance,
   type InstrumentType,
   type Note,
@@ -203,6 +204,7 @@ export function importPatternFromMidiBytes(
       tracks.push({
         id: `midi-track-${index + 1}`,
         name: trackName,
+        instrumentName: defaultElectribeInstrumentName(index),
         midiChannel: inferMidiChannel(midiTrack) + 1,
         instrumentType: TRACK_TYPES[index] ?? "other",
         muted: false,
@@ -268,6 +270,7 @@ function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
     const otherTrack = normalized[otherIndex] ?? {
       id: "midi-track-8",
       name: TRACK_NAMES[otherIndex],
+      instrumentName: defaultElectribeInstrumentName(otherIndex),
       midiChannel: otherIndex + 1,
       instrumentType: TRACK_TYPES[otherIndex],
       muted: false,
@@ -290,6 +293,7 @@ function normalizeImportedTracks(tracks: Track[], length: number): Track[] {
     padded.push({
       id: `empty-track-${index + 1}`,
       name: TRACK_NAMES[index],
+      instrumentName: defaultElectribeInstrumentName(index),
       midiChannel: index + 1,
       instrumentType: TRACK_TYPES[index],
       muted: false,

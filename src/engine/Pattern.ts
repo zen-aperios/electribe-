@@ -28,6 +28,7 @@ export interface Note {
 export interface Track {
   id: string;
   name: string;
+  instrumentName: string;
   midiChannel: number;
   instrumentType: InstrumentType;
   muted: boolean;
@@ -87,6 +88,10 @@ export const MIN_PATTERN_LENGTH = 1;
 export const MAX_PATTERN_LENGTH = 64;
 
 const now = () => new Date().toISOString();
+
+export function defaultElectribeInstrumentName(partIndex: number): string {
+  return `E2 Part ${String(partIndex + 1).padStart(2, "0")} Instrument`;
+}
 
 export function createNote(note: Omit<Note, "id"> & { id?: string }): Note {
   return {
@@ -159,6 +164,19 @@ export function createPatternFromTracks(
     })),
     createdAt,
     updatedAt: createdAt,
+  };
+}
+
+export function normalizePattern(pattern: Pattern): Pattern {
+  return {
+    ...pattern,
+    tracks: pattern.tracks.map((track, index) => ({
+      ...normalizeTrackPerformance({
+        ...track,
+        midiChannel: track.midiChannel ?? index + 1,
+      }),
+      notes: track.notes.map((note) => createNote(note)),
+    })),
   };
 }
 
@@ -238,6 +256,7 @@ function makeTrack(
   return {
     id: cryptoId(instrumentType),
     name,
+    instrumentName: defaultElectribeInstrumentName(midiChannel - 1),
     midiChannel,
     instrumentType,
     muted: false,
@@ -253,6 +272,8 @@ function makeTrack(
 export function normalizeTrackPerformance(track: Track): Track {
   return {
     ...track,
+    instrumentName:
+      track.instrumentName?.trim() || defaultElectribeInstrumentName(track.midiChannel - 1),
     muted: track.muted ?? false,
     solo: track.solo ?? false,
     volume: clamp(track.volume ?? 1, 0, 1),

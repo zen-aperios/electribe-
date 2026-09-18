@@ -21,6 +21,7 @@ export function App() {
     selectedVariationId,
     isPlaying,
     currentStep,
+    selectedHardwareTrackId,
     compareMode,
     setPlaying,
     setCurrentStep,
@@ -133,8 +134,16 @@ export function App() {
 
       <section className="workspace">
         <div className="pattern-workspace">
-          <PatternArrangementView pattern={activePattern} currentStep={currentStep} />
-          <PatternGrid pattern={activePattern} currentStep={currentStep} />
+          <PatternArrangementView
+            pattern={activePattern}
+            currentStep={currentStep}
+            selectedTrackId={selectedHardwareTrackId}
+          />
+          <PatternGrid
+            pattern={activePattern}
+            currentStep={currentStep}
+            selectedTrackId={selectedHardwareTrackId}
+          />
         </div>
         <aside className="right-rail">
           <PatternLibraryPanel />

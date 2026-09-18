@@ -15,21 +15,28 @@ const TRACK_COLORS = [
 interface PatternArrangementViewProps {
   pattern: Pattern;
   currentStep: number;
+  selectedTrackId?: string | null;
 }
 
 export function PatternArrangementView({
   pattern,
   currentStep,
+  selectedTrackId = null,
 }: PatternArrangementViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const patternRef = useRef(pattern);
   const stepRef = useRef(currentStep);
+  const selectedTrackRef = useRef<string | null>(selectedTrackId);
 
   patternRef.current = pattern;
   stepRef.current = currentStep;
+  selectedTrackRef.current = selectedTrackId;
 
   const trackLabels = useMemo(
-    () => pattern.tracks.map((track, index) => `P${index + 1} ${track.name}`),
+    () =>
+      pattern.tracks.map(
+        (track, index) => `P${index + 1} ${track.instrumentName || track.name}`,
+      ),
     [pattern.tracks],
   );
 
@@ -41,7 +48,7 @@ export function PatternArrangementView({
 
     let animationFrame = 0;
     const render = () => {
-      drawArrangement(canvas, patternRef.current, stepRef.current);
+      drawArrangement(canvas, patternRef.current, stepRef.current, selectedTrackRef.current);
       animationFrame = window.requestAnimationFrame(render);
     };
 
@@ -69,6 +76,7 @@ function drawArrangement(
   canvas: HTMLCanvasElement,
   pattern: Pattern,
   currentStep: number,
+  selectedTrackId: string | null,
 ): void {
   const rect = canvas.getBoundingClientRect();
   const scale = Math.min(window.devicePixelRatio, 2);
@@ -116,9 +124,15 @@ function drawArrangement(
   pattern.tracks.forEach((track, trackIndex) => {
     const y = padding + trackIndex * laneHeight;
     const color = TRACK_COLORS[trackIndex % TRACK_COLORS.length];
+    const selected = track.id === selectedTrackId;
 
-    context.fillStyle = trackIndex % 2 === 0 ? "#111613" : "#0d120f";
+    context.fillStyle = selected ? "#17261f" : trackIndex % 2 === 0 ? "#111613" : "#0d120f";
     context.fillRect(padding, y + laneHeight * 0.08, graphWidth, laneHeight * 0.84);
+    if (selected) {
+      context.strokeStyle = "#d7ff4f";
+      context.lineWidth = 1;
+      context.strokeRect(padding + 0.5, y + laneHeight * 0.08 + 0.5, graphWidth - 1, laneHeight * 0.84 - 1);
+    }
 
     track.notes.forEach((note) => {
       const noteX = padding + note.step * stepWidth;

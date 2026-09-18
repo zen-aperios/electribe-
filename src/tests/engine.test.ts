@@ -286,6 +286,7 @@ describe("GHOST engine", () => {
         {
           id: "overflow-track",
           name: "Overflow",
+          instrumentName: "E2 Part 09 Instrument",
           midiChannel: 9,
           instrumentType: "other",
           muted: false,
